@@ -1,5 +1,26 @@
+import { SavedMessProvider } from "@/context/SavedMessContext";
+import "../global.css";
 import { Stack } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ClerkProvider } from "@clerk/clerk-expo";
+import * as SecureStore from "expo-secure-store";
 
 export default function RootLayout() {
-  return <Stack />;
+  const tokenCache = {
+  async getToken(key: string) {
+    return SecureStore.getItemAsync(key);
+  },
+  async saveToken(key: string, value: string) {
+    return SecureStore.setItemAsync(key, value);
+  },
+};
+  return (
+        <SavedMessProvider>
+    <SafeAreaProvider>
+        <ClerkProvider publishableKey="pk_test_c3Rhci1waWdlb24tNzIuY2xlcmsuYWNjb3VudHMuZGV2JA" tokenCache={tokenCache}>
+         <Stack screenOptions={{ headerShown: false }} />
+        </ClerkProvider>
+    </SafeAreaProvider>
+     </SavedMessProvider>
+  );
 }
