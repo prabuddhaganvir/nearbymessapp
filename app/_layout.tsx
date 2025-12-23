@@ -15,12 +15,15 @@ export default function RootLayout() {
   },
 };
   return (
-        <SavedMessProvider>
+      <ClerkProvider
+  publishableKey="pk_test_c3Rhci1waWdlb24tNzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  tokenCache={tokenCache}
+>
+  <SavedMessProvider>
     <SafeAreaProvider>
-        <ClerkProvider publishableKey="pk_test_c3Rhci1waWdlb24tNzIuY2xlcmsuYWNjb3VudHMuZGV2JA" tokenCache={tokenCache}>
-         <Stack screenOptions={{ headerShown: false }} />
-        </ClerkProvider>
+      <Stack screenOptions={{ headerShown: false }} />
     </SafeAreaProvider>
-     </SavedMessProvider>
+  </SavedMessProvider>
+</ClerkProvider>
   );
 }

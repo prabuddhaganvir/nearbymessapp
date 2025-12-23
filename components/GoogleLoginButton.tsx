@@ -2,6 +2,7 @@ import { Pressable, Text, ActivityIndicator, Alert } from "react-native";
 import { useOAuth } from "@clerk/clerk-expo";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
+import * as AuthSession from "expo-auth-session";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -19,7 +20,7 @@ const login = async () => {
     setLoading(true);
 
     const result = await startOAuthFlow({
-      redirectUrl: "nearbymessnew://",
+       redirectUrl: AuthSession.makeRedirectUri(),
     });
 
     if (!result?.createdSessionId || !result?.setActive) {

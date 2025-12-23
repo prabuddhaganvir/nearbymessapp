@@ -10,4 +10,8 @@ export interface Mess {
   address?: string;
   mobileNumber?: string;
   description?:string
+   rating?: {
+    average: number;
+    count: number;
+  };
 }
