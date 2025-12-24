@@ -15,6 +15,7 @@ export default function TopBarGreet() {
       {getGreeting()} 👋
       {"\n"}
       <Text className="text-sm text-gray-500">Nearby mess, zero hassle</Text>
+      
     </Text>
   );
 }

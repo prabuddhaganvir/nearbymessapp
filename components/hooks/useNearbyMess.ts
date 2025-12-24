@@ -10,7 +10,7 @@ export default function useNearbyMess(
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!lat || !lng) return;
+    if (lat == null || lng == null) return;
 
     const fetchMess = async () => {
       try {
@@ -21,10 +21,15 @@ export default function useNearbyMess(
           `${process.env.EXPO_PUBLIC_API_URL}/api/mess/getnearby?lat=${lat}&lng=${lng}`
         );
 
-        const json = await res.json();
-        setData(json); // 👈 API directly returns array
-      } catch {
+        if (!res.ok) {
+          throw new Error("Failed to fetch nearby mess");
+        }
+
+        const json = (await res.json()) as Mess[]; // ✅ FIXED
+        setData(json);
+      } catch (err) {
         setError("Unable to load nearby mess");
+        setData([]); // ✅ avoid stale data
       } finally {
         setLoading(false);
       }

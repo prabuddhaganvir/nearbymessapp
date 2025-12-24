@@ -59,29 +59,36 @@ const displayRating =
   const saved = isSaved(mess?._id ?? "");
 
   /* ---------------- FETCH MESS ---------------- */
-  useEffect(() => {
-    const fetchMess = async () => {
-      try {
-        setLoading(true);
-        setError("");
+useEffect(() => {
+  if (!id) return;
 
-        const res = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`
-        );
+  const fetchMess = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        if (!res.ok) throw new Error();
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`
+      );
 
-        const data = await res.json();
-        setMess(data);
-      } catch {
-        setError("Unable to load mess details 😕");
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error("Failed to fetch mess");
       }
-    };
 
-    if (id) fetchMess();
-  }, [id]);
+      const data = (await res.json()) as Mess; // ✅ type-safe
+      setMess(data);
+    } catch (err) {
+      console.log("Fetch mess error:", err);
+      setError("Unable to load mess details 😕");
+      setMess(null); // ✅ avoid stale data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchMess();
+}, [id]);
+
 
 
 

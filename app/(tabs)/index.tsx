@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   Pressable,
   Text,
   TextInput,
@@ -50,15 +51,29 @@ useEffect(() => {
 
 
   return (
-    <View className="flex-1 mt-4 rounded-2xl p-4 bg-white">
+    <View className="flex-1 mt-1 rounded-2xl p-2 bg-white">
+     <Pressable
+  onPress={() => Linking.openURL("https://nearbymess.vercel.app")}
+  className="mx-4 my-3 rounded-xl bg-yellow-100 border border-yellow-300 p-3"
+>
+  <Text className="text-sm font-semibold text-yellow-900">
+    📢 Mess Owners
+  </Text>
+  <Text className="text-xs text-yellow-800 mt-1 underline">
+    Register your mess on NearByMess. Visit our official website to get listed.
+  </Text>
+</Pressable>
+
+  
+
 
       {/* TITLE */}
-      <Text className="text-base font-semibold text-gray-900">
+      <Text className="text-base font-semibold text-gray-900 ml-2">
         Your current location
       </Text>
 
       {/* LOCATION INPUT */}
-      <View className="mt-3 flex-row items-center rounded-3xl border border-gray-200 bg-gray-50 px-4 py-2">
+      <View className="mt-3 flex-row items-center rounded-3xl border border-gray-200 bg-gray-50 px-2 py-1">
         {isLocating ? (
           <ActivityIndicator size="small" color="#f38d07ff" />
         ) : (
@@ -88,7 +103,7 @@ useEffect(() => {
       <Pressable
         onPress={handleDetectLocation}
         disabled={isLocating}
-        className="mt-3 flex-row items-center justify-center rounded-2xl bg-orange-500 py-3"
+        className="mt-3 flex-row items-center justify-center rounded-2xl bg-orange-500 py-3 px-2"
       >
         <Ionicons name="navigate-outline" size={18} color="#fff" />
         <Text className="ml-2 font-semibold text-white">
