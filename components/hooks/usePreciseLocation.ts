@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import * as Location from "expo-location";
 
 interface Coordinates {
@@ -17,12 +17,13 @@ export default function useUserLocation() {
     accuracy: null,
   });
 
-  const [locationText, setLocationText] = useState("Detecting location...");
+  const [locationText, setLocationText] = useState("");
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const isFetchingRef = useRef(false);
 
+  /* 📍 GPS BASED LOCATION */
   const detectLocation = async () => {
     if (isFetchingRef.current) return;
 
@@ -32,7 +33,6 @@ export default function useUserLocation() {
     setLocationText("Getting precise location...");
 
     try {
-      /* 1️⃣ Permission */
       const { status } =
         await Location.requestForegroundPermissionsAsync();
 
@@ -45,7 +45,6 @@ export default function useUserLocation() {
       const startTime = Date.now();
       let bestLocation: Location.LocationObject | null = null;
 
-      /* 2️⃣ Try until accuracy is good OR timeout */
       while (Date.now() - startTime < MAX_WAIT_TIME) {
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.BestForNavigation,
@@ -80,7 +79,6 @@ export default function useUserLocation() {
         accuracy: accuracy ?? null,
       });
 
-      /* 3️⃣ Reverse geocode (native, fast) */
       const address = await Location.reverseGeocodeAsync({
         latitude,
         longitude,
@@ -106,16 +104,42 @@ export default function useUserLocation() {
     }
   };
 
-  /* 🚀 Auto-detect once */
-  useEffect(() => {
-    detectLocation();
-  }, []);
+  /* 🔍 TEXT → COORDINATES (Mumbai, Pune, etc.) */
+  const searchLocationByText = async (query: string) => {
+    if (!query.trim()) return;
+
+    try {
+      setLoading(true);
+      setPermissionDenied(false);
+
+      const results = await Location.geocodeAsync(query);
+
+      if (results.length === 0) {
+        setLocationText("Location not found");
+        return;
+      }
+
+      const { latitude, longitude } = results[0];
+
+      setCoords({
+        lat: latitude,
+        lng: longitude,
+        accuracy: null,
+      });
+    } catch {
+      setLocationText("Unable to find location");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     coords,
     locationText,
+    setLocationText,
     permissionDenied,
     loading,
-    detectLocation, // retry
+    detectLocation,        // 📍 GPS button
+    searchLocationByText,  // 🔍 Manual search
   };
 }

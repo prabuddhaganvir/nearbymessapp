@@ -16,7 +16,7 @@ export default function RootLayout() {
 };
   return (
       <ClerkProvider
-  publishableKey="pk_test_c3Rhci1waWdlb24tNzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  publishableKey={process.env.EXPO_PUBLIC_CLERK}
   tokenCache={tokenCache}
 >
   <SavedMessProvider>

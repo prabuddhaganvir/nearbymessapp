@@ -10,12 +10,21 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "resourceClass": "medium" 
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nearbymess.vercel.app",
+        "EXPO_PUBLIC_CLERK": "pk_test_c3Rhci1waWdlb24tNzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
       }
     },
     "production": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://nearbymess.vercel.app",
+        "EXPO_PUBLIC_CLERK": "pk_test_c3Rhci1waWdlb24tNzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
       }
     }
   }
