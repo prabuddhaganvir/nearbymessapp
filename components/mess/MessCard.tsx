@@ -8,8 +8,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Mess } from "@/types/mess";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useSavedMess } from "@/context/SavedMessContext";
+
 
 interface Props {
   mess: Mess;
@@ -38,13 +39,12 @@ export default function MessCard({ mess }: Props) {
       : styles.otherFoodText;
 
   return (
+<Link
+ href={{ pathname: "/[id]", params: { id: mess._id } } as any}
+  asChild
+>
+  
     <Pressable
-      onPress={() =>
-        router.push({
-          pathname: "/mess/[id]",
-          params: { id: mess._id },
-        })
-      }
       style={styles.card}
     >
       {/* IMAGE */}
@@ -76,7 +76,7 @@ export default function MessCard({ mess }: Props) {
               toggleSave({
                 _id: mess._id,
                 name: mess.name,
-                imageUrl: mess.imageUrl,
+              imageUrl: mess.imageUrl || "",
                 address: mess.address,
                 chargesPerMonth: mess.chargesPerMonth,
                 foodType: mess.foodType,
@@ -135,6 +135,7 @@ export default function MessCard({ mess }: Props) {
         </Text>
       </View>
     </Pressable>
+    </Link>
   );
 }
 

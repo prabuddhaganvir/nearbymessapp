@@ -6,14 +6,14 @@ import TopBarGreet from "../../components/common/TopBarGreet";
 export default function TabLayout() {
   return (
     <>
-      <StatusBar style="light" backgroundColor="#0B0F1A" />
+      <StatusBar style="dark" backgroundColor="#000000ff" />
 
       <Tabs
         screenOptions={{
-          headerStyle: { backgroundColor: "#0B0F1A" },
-          headerTintColor: "#fff",
+          headerStyle: { backgroundColor: "#f5f1ecff" },
+          headerTintColor: "#010101de",
           tabBarStyle: {
-            backgroundColor: "#0F172A",
+            backgroundColor: "#f4f5f8ff",
             borderTopColor: "#1F2937",
             height: 64,
           },
@@ -66,11 +66,10 @@ export default function TabLayout() {
         size={22}
         color={color}
       />
+      
     ),
   }}
 />
-
-        
 
      
         

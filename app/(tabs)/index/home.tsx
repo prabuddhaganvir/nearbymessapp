@@ -80,7 +80,7 @@ const Index = () => {
 
   return (
     <View style={styles.container}>
-      {/* OWNER CTA */}
+      {/* OWNER CTA
       <Pressable
         onPress={() => Linking.openURL("https://nearbymess.vercel.app")}
         style={styles.ownerCta}
@@ -89,7 +89,7 @@ const Index = () => {
         <Text style={styles.ownerSubtitle}>
           Register your mess on NearByMess
         </Text>
-      </Pressable>
+      </Pressable> */}
 
       {/* SEARCH INPUT */}
       <View style={styles.searchBox}>
@@ -99,7 +99,7 @@ const Index = () => {
           style={styles.input}
           value={locationText}
           onChangeText={setLocationText}
-          placeholder="Enter city, area or landmark"
+          placeholder="Enter city, Area or Landmark"
           placeholderTextColor="#9ca3af"
           returnKeyType="search"
           onSubmitEditing={() => searchLocationByText(locationText)}
@@ -116,7 +116,7 @@ const Index = () => {
         onPress={() => searchLocationByText(locationText)}
         style={[
           styles.searchBtn,
-          { backgroundColor: canSearch ? "#000" : "#9ca3af" },
+          { backgroundColor: canSearch ? "#18120dff" : "#f0850bff" },
         ]}
       >
         <Ionicons name="search" size={18} color="#fff" />
@@ -138,7 +138,7 @@ const Index = () => {
           >
             <View style={styles.bannerCard}>
               <LinearGradient
-                colors={["#fff", "#fff"]}
+                colors={["#fff", "#e87816ff"]}
                 style={styles.bannerGradient}
               >
                 <View style={styles.bannerHeader}>
@@ -248,32 +248,34 @@ const styles = StyleSheet.create({
     borderColor: "#FACC15",
     borderWidth: 1,
   },
-  ownerTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#92400E",
-  },
-  ownerSubtitle: {
-    fontSize: 12,
-    color: "#92400E",
-    marginTop: 4,
-    textDecorationLine: "underline",
-  },
+  // ownerTitle: {
+  //   fontSize: 14,
+  //   fontWeight: "600",
+  //   color: "#92400E",
+  // },
+  // ownerSubtitle: {
+  //   fontSize: 12,
+  //   color: "#92400E",
+  //   marginTop: 4,
+  //   textDecorationLine: "underline",
+  // },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     backgroundColor: "#F9FAFB",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 3,
     marginHorizontal: 8,
+    marginTop:14,
   },
   input: {
     flex: 1,
     marginLeft: 8,
     color: "#111827",
+    
   },
   locateBtn: {
     padding: 8,
@@ -282,9 +284,9 @@ const styles = StyleSheet.create({
   },
   searchBtn: {
     marginHorizontal: 8,
-    marginTop: 12,
-    borderRadius: 16,
-    paddingVertical: 14,
+    marginTop: 8,
+    borderRadius: 20,
+    paddingVertical: 12,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",

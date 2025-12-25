@@ -116,7 +116,7 @@ const handleDelete = async () => {
     Alert.alert("Deleted 🗑️", "Your mess has been deleted", [
       {
         text: "OK",
-        onPress: () => router.replace("/"),
+        onPress: () => router.replace("/profile"),
       },
     ]);
   } catch (err) {
@@ -130,7 +130,7 @@ const handleDelete = async () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="orange"/>
         <Text style={styles.muted}>Loading your mess…</Text>
       </View>
     );
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0B0F1A",
+    backgroundColor: "#ffffffff",
   },
   imageWrapper: {
     height: 220,

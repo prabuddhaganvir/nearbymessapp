@@ -298,7 +298,7 @@ const detectLocation = async () => {
   if (checking) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+           <ActivityIndicator size="large" color="orange"/>
         <Text style={styles.muted}>Checking owner status…</Text>
       </View>
     );

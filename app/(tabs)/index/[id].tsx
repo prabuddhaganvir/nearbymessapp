@@ -101,7 +101,8 @@ export default function MessDetails() {
 
   /* ---------------- UI ---------------- */
   return (
-    <SafeAreaView style={styles.safe}>
+
+    <View>
       {/* TOP ACTIONS */}
       <View style={styles.topActions}>
         <Pressable onPress={() => router.back()} style={styles.iconBtn}>
@@ -223,15 +224,11 @@ export default function MessDetails() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
 
   /* Common */
   center: {
