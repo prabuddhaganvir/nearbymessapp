@@ -2,7 +2,6 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-jsx",
-    //  "jsxImportSource": "nativewind",
     "moduleResolution": "bundler",
     "target": "ESNext",
     "module": "ESNext",

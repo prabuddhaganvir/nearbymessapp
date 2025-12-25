@@ -1,56 +1,79 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import TopBarGreet from "../../components/common/TopBarGreet"
 import { StatusBar } from "expo-status-bar";
+import TopBarGreet from "../../components/common/TopBarGreet";
 
 export default function TabLayout() {
   return (
     <>
-      <StatusBar style="dark" backgroundColor="#22c55e" />
-      <Tabs screenOptions={{
-        tabBarActiveTintColor: "#f86c01ff",   // tailwind green-500
-        tabBarInactiveTintColor: "#9ca3af",// tailwind gray-400
+      <StatusBar style="light" backgroundColor="#0B0F1A" />
 
-      }}
+      <Tabs
+        screenOptions={{
+          headerStyle: { backgroundColor: "#0B0F1A" },
+          headerTintColor: "#fff",
+          tabBarStyle: {
+            backgroundColor: "#0F172A",
+            borderTopColor: "#1F2937",
+            height: 64,
+          },
+          tabBarActiveTintColor: "#F97316",
+          tabBarInactiveTintColor: "#94A3B8",
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: "600",
+          },
+        }}
       >
+        {/* HOME */}
         <Tabs.Screen
           name="index"
           options={{
+            title: "Home",
             headerTitle: () => <TopBarGreet />,
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={focused ? "home" : "home-outline"}
-                size={size}
+                size={22}
                 color={color}
               />
             ),
           }}
         />
 
+        {/* SAVED */}
         <Tabs.Screen
           name="saved"
           options={{
             title: "Saved",
-            tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons name={focused ? "heart" : "heart-outline"} size={size} color={color} />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: "Profile",
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, focused }) => (
               <Ionicons
-                name={focused ? "person" : "person-outline"}
-                size={size}
+                name={focused ? "bookmark" : "bookmark-outline"}
+                size={22}
                 color={color}
               />
             ),
           }}
         />
 
+   <Tabs.Screen
+  name="profile"
+  options={{
+    title: "Profile",
+    tabBarIcon: ({ color, focused }) => (
+      <Ionicons
+        name={focused ? "person" : "person-outline"}
+        size={22}
+        color={color}
+      />
+    ),
+  }}
+/>
+
+        
+
+     
+        
       </Tabs>
     </>
   );

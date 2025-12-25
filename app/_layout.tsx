@@ -1,4 +1,4 @@
-import "../global.css"
+
 import { SavedMessProvider } from "@/context/SavedMessContext";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";

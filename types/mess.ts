@@ -1,16 +1,14 @@
-
-
 export interface Mess {
   _id: string;
   name: string;
   distance?: number;
   chargesPerMonth: number;
   foodType: string;
-  imageUrl: string;
+  imageUrl?: string;
   address?: string;
   mobileNumber?: string;
-  description?:string
-   rating?: {
+  description?: string;
+  rating?: {
     average: number;
     count: number;
   };

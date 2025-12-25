@@ -1,4 +1,11 @@
-import { View, Text, Image, Pressable } from "react-native";
+import React from "react";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Mess } from "@/types/mess";
 import { useRouter } from "expo-router";
@@ -13,9 +20,22 @@ export default function MessCard({ mess }: Props) {
   const { toggleSave, isSaved } = useSavedMess();
   const saved = isSaved(mess._id);
 
-  // ⭐ rating comes directly from API
   const rating = mess.rating ?? { average: 0, count: 0 };
   const filled = Math.round(rating.average);
+
+  const foodTypeStyle =
+    mess.foodType === "veg"
+      ? styles.veg
+      : mess.foodType === "non-veg"
+      ? styles.nonVeg
+      : styles.otherFood;
+
+  const foodTextStyle =
+    mess.foodType === "veg"
+      ? styles.vegText
+      : mess.foodType === "non-veg"
+      ? styles.nonVegText
+      : styles.otherFoodText;
 
   return (
     <Pressable
@@ -25,44 +45,28 @@ export default function MessCard({ mess }: Props) {
           params: { id: mess._id },
         })
       }
-      className="mb-4 flex-row overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+      style={styles.card}
     >
       {/* IMAGE */}
       <Image
         source={{ uri: mess.imageUrl }}
-        className="h-40 w-32 bg-gray-100"
+        style={styles.image}
         resizeMode="cover"
       />
 
       {/* CONTENT */}
-      <View className="flex-1 p-3">
+      <View style={styles.content}>
         {/* NAME + FOOD TYPE + SAVE */}
-        <View className="flex-row items-start justify-between">
+        <View style={styles.topRow}>
           <Text
-            className="flex-1 text-base font-semibold text-gray-900"
+            style={styles.name}
             numberOfLines={1}
           >
             {mess.name}
           </Text>
 
-          <View
-            className={`ml-2 rounded-full px-2 py-0.5 ${
-              mess.foodType === "veg"
-                ? "bg-green-100"
-                : mess.foodType === "non-veg"
-                ? "bg-red-100"
-                : "bg-yellow-100"
-            }`}
-          >
-            <Text
-              className={`text-xs font-semibold ${
-                mess.foodType === "veg"
-                  ? "text-green-700"
-                  : mess.foodType === "non-veg"
-                  ? "text-red-700"
-                  : "text-yellow-700"
-              }`}
-            >
+          <View style={[styles.foodBadge, foodTypeStyle]}>
+            <Text style={[styles.foodText, foodTextStyle]}>
               {mess.foodType.toUpperCase()}
             </Text>
           </View>
@@ -82,48 +86,171 @@ export default function MessCard({ mess }: Props) {
             <Ionicons
               name={saved ? "heart" : "heart-outline"}
               size={22}
-              color={saved ? "#ef4444" : "#111"}
+              color={saved ? "#EF4444" : "#111827"}
             />
           </Pressable>
         </View>
 
         {/* DISTANCE */}
         {mess.distance !== undefined && (
-          <View className="mt-1 flex-row items-center">
-            <Ionicons name="location-outline" size={14} color="#6b7280" />
-            <Text className="ml-1 text-sm text-gray-500">
+          <View style={styles.row}>
+            <Ionicons
+              name="location-outline"
+              size={14}
+              color="#6B7280"
+            />
+            <Text style={styles.distanceText}>
               {mess.distance.toFixed(2)} km away
             </Text>
           </View>
         )}
 
         {/* DESCRIPTION */}
-        <Text className="text-sm text-gray-500">
+        <Text style={styles.description}>
           {mess.description?.split(" ").slice(0, 4).join(" ")}
         </Text>
 
-        {/* ⭐ RATING (VIEW ONLY) */}
-        <View className="mt-1 flex-row items-center gap-1">
+        {/* ⭐ RATING */}
+        <View style={styles.ratingRow}>
           {[1, 2, 3, 4, 5].map((i) => (
             <Ionicons
               key={i}
               name={i <= filled ? "star" : "star-outline"}
               size={14}
-              color={i <= filled ? "#facc15" : "#d1d5db"}
+              color={i <= filled ? "#FACC15" : "#D1D5DB"}
             />
           ))}
 
-          <Text className="ml-1 text-xs font-semibold text-gray-700">
-            {rating.count > 0 ? rating.average.toFixed(1) : "New"}
+          <Text style={styles.ratingText}>
+            {rating.count > 0
+              ? rating.average.toFixed(1)
+              : "New"}
           </Text>
         </View>
 
         {/* PRICE */}
-        <Text className="mt-1 text-base font-bold text-green-600">
+        <Text style={styles.price}>
           ₹{mess.chargesPerMonth}
-          <Text className="text-sm font-normal text-gray-500"> / month</Text>
+          <Text style={styles.perMonth}> / month</Text>
         </Text>
       </View>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#bebcbaff",
+    backgroundColor: "#FFFFFF",
+    marginBottom: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  image: {
+    width: 128,
+    height: 160,
+    backgroundColor: "#F3F4F6",
+  },
+
+  content: {
+    flex: 1,
+    padding: 12,
+  },
+
+  topRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+
+  name: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+  },
+
+  foodBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+
+  foodText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+
+  veg: {
+    backgroundColor: "#DCFCE7",
+  },
+  vegText: {
+    color: "#15803D",
+  },
+
+  nonVeg: {
+    backgroundColor: "#FEE2E2",
+  },
+  nonVegText: {
+    color: "#B91C1C",
+  },
+
+  otherFood: {
+    backgroundColor: "#FEF9C3",
+  },
+  otherFoodText: {
+    color: "#A16207",
+  },
+
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  distanceText: {
+    marginLeft: 4,
+    fontSize: 13,
+    color: "#6B7280",
+  },
+
+  description: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#6B7280",
+  },
+
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    gap: 2,
+  },
+
+  ratingText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#374151",
+  },
+
+  price: {
+    marginTop: 6,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#16A34A",
+  },
+
+  perMonth: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#6B7280",
+  },
+});

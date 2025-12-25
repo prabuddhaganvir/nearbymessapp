@@ -1,4 +1,5 @@
-import { Text } from "react-native";
+import React from "react";
+import { Text, View, StyleSheet } from "react-native";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -10,10 +11,26 @@ const getGreeting = () => {
 
 export default function TopBarGreet() {
   return (
-    <Text className="font-bold text-2xl">
-      {getGreeting()} 👋
-      {"\n"}
-      <Text className="text-sm text-gray-500">Nearby mess, zero hassle</Text>
-    </Text>
+    <View>
+      <Text style={styles.title}>
+        {getGreeting()} 👋
+      </Text>
+      <Text style={styles.subtitle}>
+        Nearby mess, zero hassle
+      </Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  subtitle: {
+    marginTop: 1,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+});

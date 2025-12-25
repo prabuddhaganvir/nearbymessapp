@@ -1,25 +1,31 @@
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from 'expo-linear-gradient';
-import { MapPin, Search, ChevronRight, UtensilsCrossed } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from "react";
 import {
+  StyleSheet,
+  Text,
+  View,
   ActivityIndicator,
   FlatList,
   Linking,
   Pressable,
-  Text,
   TextInput,
-  View,
   Animated,
   TouchableOpacity,
 } from "react-native";
-import { useEffect, useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  MapPin,
+  Search,
+  ChevronRight,
+  UtensilsCrossed,
+} from "lucide-react-native";
 
 import useNearbyMess from "@/components/hooks/useNearbyMess";
+import useUserLocation from "@/components/hooks/usePreciseLocation";
 import MessCard from "@/components/mess/MessCard";
 import MessListSkeleton from "@/components/skeletons/MessListSkeleton";
-import useUserLocation from "@/components/hooks/usePreciseLocation";
 
-export default function Index() {
+const Index = () => {
   const {
     coords,
     locationText,
@@ -37,7 +43,6 @@ export default function Index() {
   const locationReady = !!coords.lat && !!coords.lng;
   const isLocating = loading;
 
-  /* 🔔 Welcome banner condition */
   const showWelcomeBanner =
     !isLocating &&
     !messLoading &&
@@ -45,7 +50,6 @@ export default function Index() {
     !hasFetchedOnce &&
     locationText.trim() === "";
 
-  /* 🎬 Banner animation */
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const bannerTranslate = useRef(new Animated.Value(10)).current;
 
@@ -75,42 +79,34 @@ export default function Index() {
   const canSearch = locationText.trim().length > 0;
 
   return (
-    <View className="flex-1 bg-white px-2 pt-2">
+    <View style={styles.container}>
       {/* OWNER CTA */}
       <Pressable
         onPress={() => Linking.openURL("https://nearbymess.vercel.app")}
-        className="mx-3 my-3 rounded-xl border border-yellow-300 bg-yellow-100 p-3"
+        style={styles.ownerCta}
       >
-        <Text className="text-sm font-semibold text-yellow-900">
-          📢 Mess Owners
-        </Text>
-        <Text className="mt-1 text-xs text-yellow-800 underline">
+        <Text style={styles.ownerTitle}>📢 Mess Owners</Text>
+        <Text style={styles.ownerSubtitle}>
           Register your mess on NearByMess
         </Text>
       </Pressable>
 
       {/* SEARCH INPUT */}
-      <View className="mx-2 mt-2 flex-row items-center rounded-3xl border border-gray-200 bg-gray-50 px-3 py-2">
-        <Ionicons name="search-outline" size={20} color="#f38d07ff" />
+      <View style={styles.searchBox}>
+        <Ionicons name="search-outline" size={20} color="#f38d07" />
 
         <TextInput
-          className="ml-3 flex-1 text-gray-800"
+          style={styles.input}
           value={locationText}
           onChangeText={setLocationText}
           placeholder="Enter city, area or landmark"
           placeholderTextColor="#9ca3af"
           returnKeyType="search"
-          onSubmitEditing={() =>
-            searchLocationByText(locationText)
-          }
+          onSubmitEditing={() => searchLocationByText(locationText)}
         />
 
-        {/* AUTO DETECT */}
-        <Pressable
-          onPress={detectLocation}
-          className="ml-2 rounded-full bg-orange-100 p-2"
-        >
-          <Ionicons name="locate" size={18} color="#f38d07ff" />
+        <Pressable onPress={detectLocation} style={styles.locateBtn}>
+          <Ionicons name="locate" size={18} color="#f38d07" />
         </Pressable>
       </View>
 
@@ -118,138 +114,108 @@ export default function Index() {
       <Pressable
         disabled={!canSearch}
         onPress={() => searchLocationByText(locationText)}
-        className={`mx-2 mt-3 flex-row items-center justify-center rounded-2xl py-3 ${
-          canSearch ? "bg-black" : "bg-gray-400"
-        }`}
+        style={[
+          styles.searchBtn,
+          { backgroundColor: canSearch ? "#000" : "#9ca3af" },
+        ]}
       >
-        <Ionicons name="search" size={18} color="#ffffffff" />
-        <Text className="ml-2 text-base font-semibold text-white">
-          Search Mess Nearby
-        </Text>
+        <Ionicons name="search" size={18} color="#fff" />
+        <Text style={styles.searchBtnText}>Search Mess Nearby</Text>
       </Pressable>
 
-      {/* LIST / STATES */}
-      <View className="flex-1 pt-3">
-        {/* 🎉 WELCOME BANNER (UI UNCHANGED) */}
-      {showWelcomeBanner && (
-  <Animated.View
-    style={{
-      opacity: bannerOpacity,
-      transform: [{ translateY: bannerTranslate }],
-    }}
-    className="flex-1 items-center justify-center px-4"
-  >
-    {/* Container with Gradient & Border */}
-    <View className="w-full overflow-hidden rounded-[30px] border border-white/10 shadow-sm shadow-orange-600">
-      <LinearGradient
-        // Deep modern dark theme: Slate 900 to nearly black
-        colors={['#ffffffff', '#ffffffff']} 
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="p-6"
-      >
-        {/* Header Section */}
-        <View className="flex-row items-start justify-between">
-          <View>
-            <View className="flex-row items-center gap-2 mb-2">
-              <View className="bg-orange-500/20 p-2 rounded-full">
-                <UtensilsCrossed size={18} color="#fb8129ff" />
-              </View>
-              <Text className="text-orange-400 font-semibold tracking-wider text-xs uppercase">
-                Hungry?
-              </Text>
-            </View>
-            <Text className="text-3xl font-bold text-black leading-tight">
-              Find your <Text className="text-orange-500">Mess</Text>
-            </Text>
-          </View>
-        </View>
+      {/* CONTENT */}
+      <View style={styles.content}>
+        {/* WELCOME BANNER */}
+        {showWelcomeBanner && (
+          <Animated.View
+            style={[
+              styles.bannerWrapper,
+              {
+                opacity: bannerOpacity,
+                transform: [{ translateY: bannerTranslate }],
+              },
+            ]}
+          >
+            <View style={styles.bannerCard}>
+              <LinearGradient
+                colors={["#fff", "#fff"]}
+                style={styles.bannerGradient}
+              >
+                <View style={styles.bannerHeader}>
+                  <View style={styles.bannerIcon}>
+                    <UtensilsCrossed size={18} color="#fb8129" />
+                  </View>
+                  <Text style={styles.bannerBadge}>Hungry?</Text>
+                </View>
 
-        <Text className="mt-3 text-base font-medium text-slate-400 leading-6">
-          Discover affordable, home-style food services nearby. 
-          Start your search now.
-        </Text>
+                <Text style={styles.bannerTitle}>
+                  Find your <Text style={styles.highlight}>Mess</Text>
+                </Text>
 
-        {/* Action Cards / Pills */}
-        <View className="mt-8 gap-3">
-          
-          {/* Action 1: Auto Detect */}
-          <TouchableOpacity className="flex-row items-center bg-white/5 border border-white/5 p-4 rounded-2xl active:bg-white/10">
-            <View className="bg-blue-500/20 p-2.5 rounded-xl mr-4">
-              <MapPin size={22} color="#60a5fa" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-black font-semibold text-base">
-                Use Current Location
-              </Text>
-              <Text className="text-slate-500 text-xs">
-                Auto-detect best messes around you
-              </Text>
-            </View>
-            <ChevronRight size={20} color="#475569" />
-          </TouchableOpacity>
+                <Text style={styles.bannerDesc}>
+                  Discover affordable, home-style food services nearby.
+                  Start your search now.
+                </Text>
 
-          {/* Action 2: Manual Search */}
-          <TouchableOpacity className="flex-row items-center bg-white/5 border border-white/5 p-4 rounded-2xl active:bg-white/10">
-            <View className="bg-purple-500/20 p-2.5 rounded-xl mr-4">
-              <Search size={22} color="#c084fc" />
-            </View>
-            <View className="flex-1">
-              <Text className="black font-semibold text-base">
-                Search by City
-              </Text>
-              <Text className="text-slate-500 text-xs">
-                Explore options in other areas
-              </Text>
-            </View>
-            <ChevronRight size={20} color="#475569" />
-          </TouchableOpacity>
+                <View style={styles.bannerActions}>
+                  <TouchableOpacity style={styles.actionCard}>
+                    <MapPin size={22} color="#60a5fa" />
+                    <View style={styles.actionText}>
+                      <Text style={styles.actionTitle}>
+                        Use Current Location
+                      </Text>
+                      <Text style={styles.actionSub}>
+                        Auto-detect messes around you
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#64748b" />
+                  </TouchableOpacity>
 
-        </View>
-      </LinearGradient>
-    </View>
-  </Animated.View>
-)}
+                  <TouchableOpacity style={styles.actionCard}>
+                    <Search size={22} color="#c084fc" />
+                    <View style={styles.actionText}>
+                      <Text style={styles.actionTitle}>
+                        Search by City
+                      </Text>
+                      <Text style={styles.actionSub}>
+                        Explore options in other areas
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#64748b" />
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+            </View>
+          </Animated.View>
+        )}
 
-        {/* LOCATING */}
+        {/* LOADING */}
         {isLocating && (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#f58207ff" />
-            <Text className="mt-3 text-gray-500">
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color="#f58207" />
+            <Text style={styles.loadingText}>
               Fetching mess near you…
             </Text>
           </View>
         )}
 
-        {/* API LOADING */}
         {!isLocating && locationReady && messLoading && (
           <MessListSkeleton />
         )}
 
-        {/* NO MESS */}
         {!isLocating &&
           locationReady &&
           hasFetchedOnce &&
           !messLoading &&
           messList.length === 0 && (
-            <View className="flex-1 items-center justify-center px-6">
-              <Text className="text-5xl">🍽️</Text>
-              <Text className="mt-4 text-lg font-semibold text-gray-800">
+            <View style={styles.center}>
+              <Text style={styles.emptyEmoji}>🍽️</Text>
+              <Text style={styles.emptyText}>
                 No mess found nearby
               </Text>
-
-              <Pressable
-                onPress={detectLocation}
-                className="mt-5 rounded-full bg-green-500 px-6 py-3"
-              >
-                <Text className="font-semibold text-white">
-                  Refresh location
-                </Text>
-              </Pressable>
             </View>
           )}
 
-        {/* DATA */}
         {!isLocating &&
           locationReady &&
           !messLoading &&
@@ -264,4 +230,154 @@ export default function Index() {
       </View>
     </View>
   );
-}
+};
+
+export default Index;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    padding: 8,
+  },
+  ownerCta: {
+    margin: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#FEF3C7",
+    borderColor: "#FACC15",
+    borderWidth: 1,
+  },
+  ownerTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#92400E",
+  },
+  ownerSubtitle: {
+    fontSize: 12,
+    color: "#92400E",
+    marginTop: 4,
+    textDecorationLine: "underline",
+  },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: 8,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 8,
+    color: "#111827",
+  },
+  locateBtn: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "#FFEDD5",
+  },
+  searchBtn: {
+    marginHorizontal: 8,
+    marginTop: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchBtnText: {
+    marginLeft: 8,
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  content: {
+    flex: 1,
+    paddingTop: 12,
+  },
+  bannerWrapper: {
+    paddingHorizontal: 12,
+  },
+  bannerCard: {
+    borderRadius: 30,
+    overflow: "hidden",
+  },
+  bannerGradient: {
+    padding: 20,
+  },
+  bannerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  bannerIcon: {
+    backgroundColor: "#FED7AA",
+    padding: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  bannerBadge: {
+    color: "#FB923C",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  bannerTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#000",
+  },
+  highlight: {
+    color: "#FB923C",
+  },
+  bannerDesc: {
+    marginTop: 8,
+    fontSize: 15,
+    color: "#6B7280",
+  },
+  bannerActions: {
+    marginTop: 20,
+    gap: 12,
+  },
+  actionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    padding: 14,
+    borderRadius: 20,
+  },
+  actionText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  actionTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#000",
+  },
+  actionSub: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    color: "#6B7280",
+  },
+  emptyEmoji: {
+    fontSize: 48,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+  },
+});

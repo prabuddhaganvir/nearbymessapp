@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,14 +7,12 @@ import {
   Pressable,
   ActivityIndicator,
   Linking,
+  StyleSheet,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSavedMess } from "@/context/SavedMessContext";
-
-
 
 interface Mess {
   _id: string;
@@ -31,26 +30,13 @@ interface Mess {
 }
 
 export default function MessDetails() {
-
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [mess, setMess] = useState<Mess | null>(null);
-  const [userSelectedRating, setUserSelectedRating] = useState<number | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [hasRated, setHasRated] = useState(false);
-  const [ratingLoading, setRatingLoading] = useState(false);
   const rating = mess?.rating ?? { average: 0, count: 0 };
-const displayRating =
-  userSelectedRating !== null
-    ? userSelectedRating
-    : rating.average;
-    
-
-
-
 
   // 🔐 replace later with real auth
   const isLoggedIn = true;
@@ -59,46 +45,42 @@ const displayRating =
   const saved = isSaved(mess?._id ?? "");
 
   /* ---------------- FETCH MESS ---------------- */
-useEffect(() => {
-  if (!id) return;
+  useEffect(() => {
+    if (!id) return;
 
-  const fetchMess = async () => {
-    try {
-      setLoading(true);
-      setError("");
+    const fetchMess = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`
-      );
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`
+        );
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch mess");
+        if (!res.ok) {
+          throw new Error("Failed to fetch mess");
+        }
+
+        const data = (await res.json()) as Mess;
+        setMess(data);
+      } catch (err) {
+        console.log("Fetch mess error:", err);
+        setError("Unable to load mess details 😕");
+        setMess(null);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = (await res.json()) as Mess; // ✅ type-safe
-      setMess(data);
-    } catch (err) {
-      console.log("Fetch mess error:", err);
-      setError("Unable to load mess details 😕");
-      setMess(null); // ✅ avoid stale data
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchMess();
-}, [id]);
-
-
-
-
+    fetchMess();
+  }, [id]);
 
   /* ---------------- LOADING ---------------- */
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#f58207ff" />
-        <Text className="mt-3 text-gray-500">
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#f58207" />
+        <Text style={styles.subtleText}>
           Loading mess details…
         </Text>
       </View>
@@ -108,26 +90,21 @@ useEffect(() => {
   /* ---------------- ERROR ---------------- */
   if (error || !mess) {
     return (
-      <View className="flex-1 items-center justify-center px-6 bg-white">
-        <Text className="text-5xl">⚠️</Text>
-        <Text className="mt-3 text-center text-gray-600">
+      <View style={styles.center}>
+        <Text style={styles.errorEmoji}>⚠️</Text>
+        <Text style={styles.errorText}>
           {error || "Something went wrong"}
         </Text>
       </View>
     );
   }
 
-  
-
   /* ---------------- UI ---------------- */
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={styles.safe}>
       {/* TOP ACTIONS */}
-      <View className="absolute top-14 left-3 right-3 z-10 flex-row justify-between">
-        <Pressable
-          onPress={() => router.back()}
-          className="rounded-full bg-white/90 p-2"
-        >
+      <View style={styles.topActions}>
+        <Pressable onPress={() => router.back()} style={styles.iconBtn}>
           <Ionicons name="arrow-back" size={22} color="#111" />
         </Pressable>
 
@@ -151,97 +128,97 @@ useEffect(() => {
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1 bg-white">
+      <ScrollView showsVerticalScrollIndicator={false}>
         <Image
           source={{ uri: mess.imageUrl }}
-          className="h-64 w-full bg-gray-200"
+          style={styles.image}
           resizeMode="cover"
         />
 
-        <View className="p-4">
-          <Text className="text-2xl font-bold text-gray-900">
-            {mess.name}
-          </Text>
+        <View style={styles.content}>
+          <Text style={styles.title}>{mess.name}</Text>
 
-          <View className="mt-2 flex-row items-center">
-            <Ionicons name="location-outline" size={16} color="#6b7280" />
-            <Text className="ml-1 text-sm text-gray-500">
+          <View style={styles.locationRow}>
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color="#6b7280"
+            />
+            <Text style={styles.locationText}>
               {mess.address}
             </Text>
           </View>
 
           {/* ⭐ RATING */}
-<View className="mt-3 flex-row items-center">
-  {[1, 2, 3, 4, 5].map((i) => (
-    <Pressable
-      key={i}
-      disabled={!isLoggedIn || hasRated}
+          <View style={styles.ratingRow}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Pressable key={i} style={styles.starBtn}>
+                <Ionicons
+                  name={
+                    i <= Math.round(rating.average)
+                      ? "star"
+                      : "star-outline"
+                  }
+                  size={20}
+                  color={
+                    i <= Math.round(rating.average)
+                      ? "#facc15"
+                      : "#d1d5db"
+                  }
+                />
+              </Pressable>
+            ))}
 
-      style={{ padding: 4 }}
-    >
-      <Ionicons
-        name={i <= Math.round(displayRating) ? "star" : "star-outline"}
-        size={20}
-        color={i <= Math.round(displayRating) ? "#facc15" : "#d1d5db"}
-      />
-    </Pressable>
-  ))}
-
-  <Text className="ml-2 text-sm font-semibold text-gray-700">
-    {rating.count > 0 ? rating.average.toFixed(1) : "New"}
-  </Text>
-</View>
-
-
-          {!isLoggedIn && (
-            <Text className="mt-1 text-xs text-gray-400">
-              Login to rate
+            <Text style={styles.ratingText}>
+              {rating.count > 0
+                ? rating.average.toFixed(1)
+                : "New"}
             </Text>
-          )}
+          </View>
 
-          {hasRated && (
-            <Text className="mt-1 text-xs text-green-600">
-              ✅ You already rated
-            </Text>
-          )}
-
-          <Text className="mt-3 text-xl font-semibold text-green-600">
-            ₹{mess.chargesPerMonth}{" "}
-            <Text className="text-sm font-normal text-gray-500">
-              / month
-            </Text>
+          <Text style={styles.price}>
+            ₹{mess.chargesPerMonth}
+            <Text style={styles.perMonth}> / month</Text>
           </Text>
 
-          <Text className="mt-1 text-sm text-gray-500">
+          <Text style={styles.foodType}>
             🍱 Food type: {mess.foodType}
           </Text>
 
-          <Text className="mt-4 text-gray-700 leading-6">
+          <Text style={styles.description}>
             {mess.description}
           </Text>
 
           {/* CTA */}
-          <View className="mt-6 flex-row gap-3">
+          <View style={styles.ctaRow}>
             <Pressable
-              onPress={() => Linking.openURL(`tel:${mess.mobileNumber}`)}
-              className="flex-1 flex-row items-center justify-center rounded-xl bg-green-500 py-3"
+              onPress={() =>
+                Linking.openURL(`tel:${mess.mobileNumber}`)
+              }
+              style={[styles.ctaBtn, styles.callBtn]}
             >
-              <Ionicons name="call-outline" size={18} color="#fff" />
-              <Text className="ml-2 font-semibold text-white">
-                Call
-              </Text>
+              <Ionicons
+                name="call-outline"
+                size={18}
+                color="#fff"
+              />
+              <Text style={styles.ctaText}>Call</Text>
             </Pressable>
 
             <Pressable
               onPress={() =>
-                Linking.openURL(`https://wa.me/91${mess.mobileNumber}`)
+                Linking.openURL(
+                  `https://wa.me/91${mess.mobileNumber}`
+                )
               }
-              className="flex-1 flex-row items-center justify-center rounded-xl bg-gray-900 py-3"
+              style={[styles.ctaBtn, styles.whatsappBtn]}
             >
-              <Ionicons name="logo-whatsapp" size={18} color="#fff" />
-              <Text className="ml-2 font-semibold text-white">
-                WhatsApp
-              </Text>
+              <Ionicons
+                name="logo-whatsapp"
+                size={18}
+                color="#fff"
+              />
+              <Text style={styles.ctaText}>WhatsApp</Text>
             </Pressable>
           </View>
         </View>
@@ -249,3 +226,143 @@ useEffect(() => {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
+  /* Common */
+  center: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  subtleText: {
+    marginTop: 12,
+    color: "#6B7280",
+  },
+  errorEmoji: {
+    fontSize: 48,
+  },
+  errorText: {
+    marginTop: 12,
+    textAlign: "center",
+    color: "#4B5563",
+  },
+
+  /* Top actions */
+  topActions: {
+    position: "absolute",
+    top: 56,
+    left: 12,
+    right: 12,
+    zIndex: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  iconBtn: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    padding: 8,
+    borderRadius: 20,
+  },
+
+  /* Image */
+  image: {
+    width: "100%",
+    height: 260,
+    backgroundColor: "#E5E7EB",
+  },
+
+  /* Content */
+  content: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  locationText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+
+  /* Rating */
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  starBtn: {
+    padding: 4,
+  },
+  ratingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+  },
+
+  /* Price */
+  price: {
+    marginTop: 12,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#16A34A",
+  },
+  perMonth: {
+    fontSize: 14,
+    fontWeight: "400",
+    color: "#6B7280",
+  },
+
+  foodType: {
+    marginTop: 4,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+
+  description: {
+    marginTop: 16,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#374151",
+  },
+
+  /* CTA */
+  ctaRow: {
+    flexDirection: "row",
+    marginTop: 24,
+    gap: 12,
+  },
+  ctaBtn: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  callBtn: {
+    backgroundColor: "#22C55E",
+  },
+  whatsappBtn: {
+    backgroundColor: "#111827",
+  },
+  ctaText: {
+    marginLeft: 8,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+});

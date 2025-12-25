@@ -1,16 +1,23 @@
-import { FlatList, Text, View, ActivityIndicator } from "react-native";
+import React from "react";
+import {
+  FlatList,
+  Text,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import MessCard from "@/components/mess/MessCard";
 import { useSavedMess } from "@/context/SavedMessContext";
 
 export default function Saved() {
-  const { saved, loading } = useSavedMess(); // 👈 assume loading state
+  const { saved, loading } = useSavedMess();
 
   /* 🔄 Loading state */
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View style={styles.center}>
         <ActivityIndicator size="large" />
-        <Text className="mt-3 text-gray-500">
+        <Text style={styles.subtleText}>
           Loading saved messes...
         </Text>
       </View>
@@ -20,9 +27,9 @@ export default function Saved() {
   /* 💔 Empty state */
   if (!saved || saved.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Text className="text-4xl">❤️</Text>
-        <Text className="mt-3 text-gray-500">
+      <View style={styles.center}>
+        <Text style={styles.emoji}>❤️</Text>
+        <Text style={styles.subtleText}>
           No saved mess yet
         </Text>
       </View>
@@ -31,14 +38,13 @@ export default function Saved() {
 
   /* ✅ Main UI */
   return (
-    <View className="flex-1 bg-white px-4 pt-6">
-      
+    <View style={styles.container}>
       {/* Header */}
-      <View className="mb-6">
-        <Text className="text-2xl font-semibold text-black">
+      <View style={styles.header}>
+        <Text style={styles.title}>
           Saved Messes
         </Text>
-        <Text className="text-sm text-gray-400 mt-1">
+        <Text style={styles.subtitle}>
           Your bookmarked places, ready anytime
         </Text>
       </View>
@@ -48,10 +54,10 @@ export default function Saved() {
         data={saved}
         keyExtractor={(item) => item._id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        ItemSeparatorComponent={() => <View className="h-4" />}
+        contentContainerStyle={styles.listContent}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item }) => (
-          <View className="rounded-2xl">
+          <View style={styles.cardWrapper}>
             <MessCard mess={item} />
           </View>
         )}
@@ -59,3 +65,62 @@ export default function Saved() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  /* Layout */
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingTop: 24,
+  },
+
+  center: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  /* Text */
+  title: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#000000",
+  },
+
+  subtitle: {
+    fontSize: 14,
+    color: "#9CA3AF",
+    marginTop: 4,
+  },
+
+  subtleText: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 12,
+  },
+
+  emoji: {
+    fontSize: 40,
+  },
+
+  /* Header */
+  header: {
+    marginBottom: 24,
+  },
+
+  /* List */
+  listContent: {
+    paddingBottom: 24,
+  },
+
+  separator: {
+    height: 16,
+  },
+
+  cardWrapper: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+});

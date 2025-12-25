@@ -1,7 +1,13 @@
-import { Pressable, Text, ActivityIndicator, Alert } from "react-native";
+import React, { useState } from "react";
+import {
+  Pressable,
+  Text,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+} from "react-native";
 import { useOAuth } from "@clerk/clerk-expo";
 import * as WebBrowser from "expo-web-browser";
-import { useState } from "react";
 import * as AuthSession from "expo-auth-session";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -13,52 +19,80 @@ export default function GoogleLoginButton() {
 
   const [loading, setLoading] = useState(false);
 
-const login = async () => {
-  if (loading) return;
+  const login = async () => {
+    if (loading) return;
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const result = await startOAuthFlow({
-       redirectUrl: AuthSession.makeRedirectUri(),
-    });
+      const result = await startOAuthFlow({
+        redirectUrl: AuthSession.makeRedirectUri(),
+      });
 
-    if (!result?.createdSessionId || !result?.setActive) {
-      // user cancelled or flow incomplete
-      return;
+      if (!result?.createdSessionId || !result?.setActive) {
+        // user cancelled or flow incomplete
+        return;
+      }
+
+      await result.setActive({
+        session: result.createdSessionId,
+      });
+    } catch (err: any) {
+      console.error(
+        "Google login error:",
+        JSON.stringify(err, null, 2)
+      );
+
+      Alert.alert(
+        "Login failed",
+        err?.errors?.[0]?.longMessage ||
+          "Unable to sign in with Google"
+      );
+    } finally {
+      setLoading(false);
     }
-
-    await result.setActive({
-      session: result.createdSessionId,
-    });
-  } catch (err: any) {
-    console.error("Google login error:", JSON.stringify(err, null, 2));
-
-    Alert.alert(
-      "Login failed",
-      err?.errors?.[0]?.longMessage ||
-        "Unable to sign in with Google"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <Pressable
       onPress={login}
       disabled={loading}
-      className={`px-4 py-3 rounded-xl ${
-        loading ? "bg-gray-400" : "bg-black"
-      }`}
+      style={[
+        styles.button,
+        loading ? styles.disabled : styles.enabled,
+      ]}
     >
       {loading ? (
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color="#FFFFFF" />
       ) : (
-        <Text className="text-white text-center font-semibold">
+        <Text style={styles.text}>
           Continue with Google
         </Text>
       )}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  enabled: {
+    backgroundColor: "#111827",
+  },
+
+  disabled: {
+    backgroundColor: "#9CA3AF",
+  },
+
+  text: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});
