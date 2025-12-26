@@ -13,7 +13,7 @@ export default function TopBarGreet() {
   return (
     <View>
       <Text style={styles.title}>
-        {getGreeting()} 👋
+        {getGreeting()}!
       </Text>
       <Text style={styles.subtitle}>
         Nearby mess, zero hassle

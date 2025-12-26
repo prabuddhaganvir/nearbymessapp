@@ -162,6 +162,7 @@ const handleDelete = async () => {
           "https://images.unsplash.com/photo-1546069901-ba9599a7e63c",
       }}
       style={styles.image}
+      
     />
   </View>
 

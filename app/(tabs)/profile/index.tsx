@@ -5,6 +5,7 @@ import {
   Image,
   StyleSheet,
   ScrollView,
+  Linking,
 } from "react-native";
 import { useUser, useAuth } from "@clerk/clerk-expo";
 import GoogleLoginButton from "@/components/GoogleLoginButton";
@@ -104,6 +105,51 @@ export default function Profile() {
             </Text>
           </Pressable>
         </View>
+
+        {/* Footer */}
+
+          <View style={styles.footer}>
+      {/* About */}
+      <Text style={styles.appName}>NearByMess</Text>
+      <Text style={styles.about}>
+        NearByMess helps you find trusted mess & tiffin services near you —
+        simple, fast, and local.
+      </Text>
+
+      {/* Links */}
+      <View style={styles.links}>
+        <Pressable onPress={() => Linking.openURL("mailto:support@nearbymess.com")}>
+          <Text style={styles.link}>📧 support@nearbymess.com</Text>
+        </Pressable>
+
+        <Pressable onPress={() => Linking.openURL("https://nearbymess.vercel.app")}>
+          <Text style={styles.link}>🌐 Visit Website</Text>
+        </Pressable>
+
+        <Pressable onPress={() => Linking.openURL("https://nearbymess.com/privacy")}>
+          <Text style={styles.link}>🔒 Privacy Policy</Text>
+        </Pressable>
+
+        <Pressable onPress={() => Linking.openURL("https://nearbymess.com/terms")}>
+          <Text style={styles.link}>📄 Terms & Conditions</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.disclaimerBox}>
+  <Text style={styles.disclaimer}>
+    NearByMess is an early demo built independently.
+    Some features may be incomplete or buggy.
+    Feedback is always welcome.
+  </Text>
+</View>
+ {/* Footer Bottom */}
+      <Text style={styles.version}>Version 1.0.0</Text>
+      <Text style={styles.copy}>
+        © {new Date().getFullYear()} NearByMess. All rights reserved.
+      </Text>
+
+    </View>
+
       </View>
     </ScrollView>
   );
@@ -268,4 +314,57 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
+   footer: {
+    padding: 20,
+    marginTop: 40,
+    borderTopWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+  },
+  appName: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  about: {
+    fontSize: 13,
+    color: "#6b7280",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  links: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  link: {
+    fontSize: 14,
+    color: "#2563eb",
+  },
+  version: {
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+  copy: {
+    fontSize: 11,
+    color: "#9ca3af",
+    marginTop: 4,
+  },
+  disclaimerBox: {
+  marginTop: 16,
+  padding: 12,
+  borderRadius: 12,
+  backgroundColor: "#f9fafb",
+  borderWidth: 1,
+  borderColor: "#e5e7eb",
+},
+disclaimer: {
+  fontSize: 12,
+  color: "#9ca3af", // soft gray
+  textAlign: "center",
+  lineHeight: 18,
+  marginTop: 12,
+  paddingHorizontal: 20,
+},
+
+
 });

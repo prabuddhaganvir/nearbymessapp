@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Dimensions,
+  Image,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
@@ -124,7 +125,7 @@ export default function EditMess() {
 
   const handleScroll = (e: any) => {
     const y = e.nativeEvent.contentOffset.y;
-    setShowStickySave(y > SCREEN_HEIGHT * 0.4);
+    setShowStickySave(y > SCREEN_HEIGHT * 0.8);
   };
 
   /* ---------------- LOADING ---------------- */
@@ -218,12 +219,21 @@ export default function EditMess() {
           />
 
           <Input
+            
             label="Image URL"
             value={form.imageUrl || ""}
-            onChange={(v) =>
-              setForm({ ...form, imageUrl: v })
-            }
+             onChange={undefined}
           />
+          <Image
+    source={{ uri: form.imageUrl  || ""}}
+    style={{
+      width: "100%",
+      height: 180,
+      borderRadius: 12,
+      marginBottom: 10,
+    }}
+    resizeMode="cover"
+  />
         </View>
 
         {/* Bottom fallback */}
@@ -248,7 +258,7 @@ export default function EditMess() {
 
 /* ---------------- INPUT ---------------- */
 
-function Input({
+ function Input({
   label,
   value,
   onChange,
@@ -257,10 +267,10 @@ function Input({
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange?: (v: string) => void;
   multiline?: boolean;
   keyboardType?: "default" | "numeric" | "phone-pad";
-}) {
+}){
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -268,6 +278,7 @@ function Input({
         value={value}
         onChangeText={onChange}
         multiline={multiline}
+        editable={!!onChange} 
         keyboardType={keyboardType}
         style={[
           styles.input,

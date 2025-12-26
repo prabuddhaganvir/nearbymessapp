@@ -24,6 +24,7 @@ import useNearbyMess from "@/components/hooks/useNearbyMess";
 import useUserLocation from "@/components/hooks/usePreciseLocation";
 import MessCard from "@/components/mess/MessCard";
 import MessListSkeleton from "@/components/skeletons/MessListSkeleton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Index = () => {
   const {
@@ -34,11 +35,13 @@ const Index = () => {
     detectLocation,
     searchLocationByText,
   } = useUserLocation();
+  const [showPopup, setShowPopup] = useState(false);
 
   const { data: messList, loading: messLoading } =
     useNearbyMess(coords.lat, coords.lng);
 
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+
 
   const locationReady = !!coords.lat && !!coords.lng;
   const isLocating = loading;
@@ -78,8 +81,88 @@ const Index = () => {
 
   const canSearch = locationText.trim().length > 0;
 
+
+const messages = [
+  "Locating you… 📍",
+  "Fetching mess near you… 🍽️",
+  "Almost there… ⏳",
+  "Getting precise location (this may take a moment)… 🧭",
+];
+
+const [step, setStep] = useState(0);
+
+useEffect(() => {
+  let timeouts: ReturnType<typeof setTimeout>[] = [];
+
+  const runSequence = () => {
+    messages.forEach((_, index) => {
+      const t = setTimeout(() => {
+        setStep(index);
+      }, index * 1500); // step change speed
+      timeouts.push(t);
+    });
+
+    // 🔁 restart after last + 5 sec
+    const restart = setTimeout(() => {
+      setStep(0);
+      runSequence();
+    }, messages.length * 1500 + 5000);
+
+    timeouts.push(restart);
+  };
+
+  runSequence();
+
+  return () => {
+    timeouts.forEach(clearTimeout);
+  };
+}, []);
+
+type LatestMessResponse = {
+  createdAt: string | null;
+  messId?: string;
+  name?: string;
+};
+
+
+  useEffect(() => {
+    const checkNewMess = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}/api/mess/latest`
+        );
+        const data = (await res.json()) as LatestMessResponse;
+
+        // 👉 show popup if mess added in last 15 minutes
+        const FIFTEEN_MIN = 15 * 60 * 1000;
+
+        if (
+          data?.createdAt &&
+          Date.now() - new Date(data.createdAt).getTime() < FIFTEEN_MIN
+        ) {
+          setShowPopup(true);
+          setTimeout(() => setShowPopup(false), 2000);
+        }
+      } catch (e) {
+        console.log("popup error", e);
+      }
+    };
+
+    checkNewMess();
+  }, []);
+
+
+
+
   return (
     <View style={styles.container}>
+      {showPopup && (
+      <View style={styles.popup}>
+        <Text style={styles.popupText}>
+          🎉 New mess added near your area!
+        </Text>
+      </View>
+    )}
       {/* OWNER CTA
       <Pressable
         onPress={() => Linking.openURL("https://nearbymess.vercel.app")}
@@ -191,12 +274,14 @@ const Index = () => {
 
         {/* LOADING */}
         {isLocating && (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color="#f58207" />
-            <Text style={styles.loadingText}>
-              Fetching mess near you…
-            </Text>
-          </View>
+        <View style={styles.center}>
+  <ActivityIndicator size="large" color="#f58207" />
+  <Text style={styles.loadingText}>
+    {messages[step]}
+  </Text>
+
+</View>
+
         )}
 
         {!isLocating && locationReady && messLoading && (
@@ -228,6 +313,7 @@ const Index = () => {
             />
           )}
       </View>
+      
     </View>
   );
 };
@@ -381,5 +467,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#374151",
+  },
+   popup: {
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: "#111827",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    elevation: 10,
+    zIndex: 9999,
+  },
+  popupText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
