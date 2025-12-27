@@ -141,7 +141,7 @@ const handleDelete = async () => {
       <View style={styles.center}>
         <Text style={styles.title}>No mess found</Text>
         <Pressable
-          style={styles.primaryBtn}
+          style={styles.addMess}
           onPress={() => router.replace("/profile/add-mess")}
         >
           <Text style={styles.primaryText}>Add Your Mess</Text>
@@ -354,7 +354,12 @@ primaryBtn: {
   paddingHorizontal: 24,
   borderRadius: 14,
 },
-
+addMess:{
+  backgroundColor: "#f48005ff",
+    paddingVertical: 14,
+  paddingHorizontal: 24,
+  borderRadius: 14,
+},
 primaryText: {
   color: "#FFFFFF",
   fontSize: 15,

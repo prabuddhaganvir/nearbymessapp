@@ -23,6 +23,8 @@ const INITIAL_COORDS: Coordinates = {
   lng: null,
   accuracy: null,
 };
+const [autoDetectAllowed, setAutoDetectAllowed] = useState(false);
+
 
 /* ---------------- HOOK ---------------- */
 
@@ -155,9 +157,12 @@ export default function useUserLocation() {
 
   /* ---------------- AUTO DETECT ON MOUNT ---------------- */
 
-  useEffect(() => {
-    detectLocation();
-  }, [detectLocation]);
+useEffect(() => {
+  if (!autoDetectAllowed) return;
+
+  detectLocation();
+}, [autoDetectAllowed, detectLocation]);
+
 
   /* ---------------- RETURN ---------------- */
 

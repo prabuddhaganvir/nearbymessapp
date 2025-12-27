@@ -37,6 +37,7 @@ const Index = () => {
     searchLocationByText,
   } = useUserLocation();
   const [showPopup, setShowPopup] = useState(false);
+  const [autoDetectAllowed, setAutoDetectAllowed] = useState(false);
   const shouldFetch = !!coords.lat && !!coords.lng;
 
   const { data: messList, loading: messLoading } =
@@ -59,6 +60,18 @@ const Index = () => {
 
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const bannerTranslate = useRef(new Animated.Value(10)).current;
+
+useEffect(() => {
+  if (showWelcomeBanner) {
+    const t = setTimeout(() => {
+      setAutoDetectAllowed(true);
+    }, 1200); // 👈 banner visible for 1.2s
+
+    return () => clearTimeout(t);
+  }
+}, [showWelcomeBanner]);
+
+
 
   useEffect(() => {
     if (showWelcomeBanner) {
