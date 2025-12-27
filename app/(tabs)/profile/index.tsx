@@ -21,6 +21,10 @@ export default function Profile() {
   const { signOut } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const { refreshing, onRefresh } = usePageRefresh(async () => {
+    await user?.reload();
+  });
+
   if (!isLoaded) return null;
 
   // console.log("PROFILE:", {
@@ -63,11 +67,7 @@ export default function Profile() {
       </View>
     );
   }
-  const { refreshing, onRefresh } = usePageRefresh(async () => {
-  // 🔁 what you want to refresh
-  await user?.reload();
- 
-});
+
 
   // 🔒 Logged IN (SCROLLABLE)
   return (
