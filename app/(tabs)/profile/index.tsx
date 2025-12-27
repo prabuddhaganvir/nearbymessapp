@@ -6,15 +6,48 @@ import {
   StyleSheet,
   ScrollView,
   Linking,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from "react-native";
 import { useUser, useAuth } from "@clerk/clerk-expo";
 import GoogleLoginButton from "@/components/GoogleLoginButton";
 import { router } from "expo-router";
+import { useState } from "react";
+import { usePageRefresh } from "@/components/hooks/usePageRefresh";
 
 export default function Profile() {
-  const { isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const { signOut } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
+  if (!isLoaded) return null;
+
+  // console.log("PROFILE:", {
+  //   isLoaded,
+  //   isSignedIn,
+  //   userId: user?.id,
+  // });
+
+
+  const openWithFallback = async (
+    primaryUrl: string,
+    fallbackUrl: string
+  ) => {
+    try {
+      const supported = await Linking.canOpenURL(primaryUrl);
+      if (supported) {
+        await Linking.openURL(primaryUrl);
+      } else {
+        await Linking.openURL(fallbackUrl);
+      }
+    } catch (err) {
+      Alert.alert(
+        "Unable to open link",
+        "Please check your internet connection"
+      );
+    }
+  };
   // 🔓 Logged OUT
   if (!isSignedIn) {
     return (
@@ -30,10 +63,22 @@ export default function Profile() {
       </View>
     );
   }
+  const { refreshing, onRefresh } = usePageRefresh(async () => {
+  // 🔁 what you want to refresh
+  await user?.reload();
+ 
+});
 
   // 🔒 Logged IN (SCROLLABLE)
   return (
     <ScrollView
+   refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      tintColor="#f58207"
+    />
+  }
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -64,25 +109,25 @@ export default function Profile() {
       </View>
 
       {/* Owner / Mess Actions */}
- <View style={styles.listCard}>
-  <Pressable
-    style={styles.listItem}
-    onPress={() => router.push("/profile/add-mess")}
-  >
-    <Text style={styles.listText}>🍽️ Become Owner</Text>
-    <Text style={styles.arrow}>›</Text>
-  </Pressable>
+      <View style={styles.listCard}>
+        <Pressable
+          style={styles.listItem}
+          onPress={() => router.push("/profile/add-mess")}
+        >
+          <Text style={styles.listText}>🍽️ Become Owner</Text>
+          <Text style={styles.arrow}>›</Text>
+        </Pressable>
 
-  <View style={styles.divider} />
+        <View style={styles.divider} />
 
-  <Pressable
-    style={styles.listItem}
-    onPress={() => router.push("/profile/your-mess")}
-  >
-    <Text style={styles.listText}>🏠 Your Mess</Text>
-    <Text style={styles.arrow}>›</Text>
-  </Pressable>
-</View>
+        <Pressable
+          style={styles.listItem}
+          onPress={() => router.push("/profile/your-mess")}
+        >
+          <Text style={styles.listText}>🏠 Your Mess</Text>
+          <Text style={styles.arrow}>›</Text>
+        </Pressable>
+      </View>
 
 
       {/* Body */}
@@ -97,58 +142,95 @@ export default function Profile() {
 
         <View style={styles.card}>
           <Pressable
-            onPress={() => signOut()}
-            style={styles.logoutBtn}
+            onPress={async () => {
+              if (loggingOut) return;
+
+              try {
+                setLoggingOut(true);
+                await signOut();
+              } finally {
+                setLoggingOut(false);
+              }
+            }}
+            disabled={loggingOut}
+            style={[
+              styles.logoutBtn,
+              loggingOut && { opacity: 0.6 },
+            ]}
           >
-            <Text style={styles.logoutText}>
-              Logout
-            </Text>
+            {loggingOut ? (
+              <ActivityIndicator size="small" color="#EF4444" />
+            ) : (
+              <Text style={styles.logoutText}>Logout</Text>
+            )}
           </Pressable>
         </View>
 
+
         {/* Footer */}
 
-          <View style={styles.footer}>
-      {/* About */}
-      <Text style={styles.appName}>NearByMess</Text>
-      <Text style={styles.about}>
-        NearByMess helps you find trusted mess & tiffin services near you —
-        simple, fast, and local.
-      </Text>
+        <View style={styles.footer}>
+          {/* About */}
+          <Text style={styles.appName}>NearByMess</Text>
+          <Text style={styles.about}>
+            NearByMess helps you find trusted mess & tiffin services near you —
+            simple, fast, and local.
+          </Text>
 
-      {/* Links */}
-      <View style={styles.links}>
-        <Pressable onPress={() => Linking.openURL("mailto:support@nearbymess.com")}>
-          <Text style={styles.link}>📧 support@nearbymess.com</Text>
-        </Pressable>
+          {/* Links */}
+          <View style={styles.links}>
+            <Pressable onPress={() => Linking.openURL("mailto:support@nearbymess.com")}>
+              <Text style={styles.link}>📧 support@nearbymess.com</Text>
+            </Pressable>
 
-        <Pressable onPress={() => Linking.openURL("https://nearbymess.vercel.app")}>
-          <Text style={styles.link}>🌐 Visit Website</Text>
-        </Pressable>
+            <Pressable
+              onPress={() =>
+                openWithFallback(
+                  "https://nearbymess.space",
+                  "https://nearbymess.vercel.app"
+                )
+              }
+            >
+              <Text style={styles.link}>🌐 Visit Website</Text>
+            </Pressable>
 
-        <Pressable onPress={() => Linking.openURL("https://nearbymess.com/privacy")}>
-          <Text style={styles.link}>🔒 Privacy Policy</Text>
-        </Pressable>
+            <Pressable
+              onPress={() =>
+                openWithFallback(
+                  "https://nearbymess.space/privacy",
+                  "https://nearbymess.vercel.app/privacy"
+                )
+              }
+            >
+              <Text style={styles.link}>🔒 Privacy Policy</Text>
+            </Pressable>
 
-        <Pressable onPress={() => Linking.openURL("https://nearbymess.com/terms")}>
-          <Text style={styles.link}>📄 Terms & Conditions</Text>
-        </Pressable>
-      </View>
+            <Pressable
+              onPress={() =>
+                openWithFallback(
+                  "https://nearbymess.space/terms",
+                  "https://nearbymess.vercel.app/terms"
+                )
+              }
+            >
+              <Text style={styles.link}>📄 Terms & Conditions</Text>
+            </Pressable>
+          </View>
 
-      <View style={styles.disclaimerBox}>
-  <Text style={styles.disclaimer}>
-    NearByMess is an early demo built independently.
-    Some features may be incomplete or buggy.
-    Feedback is always welcome.
-  </Text>
-</View>
- {/* Footer Bottom */}
-      <Text style={styles.version}>Version 1.0.0</Text>
-      <Text style={styles.copy}>
-        © {new Date().getFullYear()} NearByMess. All rights reserved.
-      </Text>
+          <View style={styles.disclaimerBox}>
+            <Text style={styles.disclaimer}>
+              NearByMess is an early demo built independently.
+              Some features may be incomplete or buggy.
+              Feedback is always welcome.
+            </Text>
+          </View>
+          {/* Footer Bottom */}
+          <Text style={styles.version}>Version 1.0.0</Text>
+          <Text style={styles.copy}>
+            © {new Date().getFullYear()} NearByMess. All rights reserved.
+          </Text>
 
-    </View>
+        </View>
 
       </View>
     </ScrollView>
@@ -314,7 +396,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
-   footer: {
+  footer: {
     padding: 20,
     marginTop: 40,
     borderTopWidth: 1,
@@ -350,21 +432,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   disclaimerBox: {
-  marginTop: 16,
-  padding: 12,
-  borderRadius: 12,
-  backgroundColor: "#f9fafb",
-  borderWidth: 1,
-  borderColor: "#e5e7eb",
-},
-disclaimer: {
-  fontSize: 12,
-  color: "#9ca3af", // soft gray
-  textAlign: "center",
-  lineHeight: 18,
-  marginTop: 12,
-  paddingHorizontal: 20,
-},
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  disclaimer: {
+    fontSize: 12,
+    color: "#9ca3af", // soft gray
+    textAlign: "center",
+    lineHeight: 18,
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
 
 
 });

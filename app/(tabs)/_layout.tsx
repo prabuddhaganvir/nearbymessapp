@@ -9,6 +9,7 @@ export default function TabLayout() {
       <StatusBar style="dark" backgroundColor="#000000ff" />
 
       <Tabs
+      
         screenOptions={{
           headerStyle: { backgroundColor: "#f5f1ecff" },
           headerTintColor: "#010101de",
@@ -27,7 +28,7 @@ export default function TabLayout() {
       >
         {/* HOME */}
         <Tabs.Screen
-          name="index"
+        name="(home)" 
           options={{
             title: "Home",
             headerTitle: () => <TopBarGreet />,

@@ -13,6 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSavedMess } from "@/context/SavedMessContext";
+import { useUser } from "@clerk/clerk-expo";
 
 interface Mess {
   _id: string;
@@ -43,37 +44,101 @@ export default function MessDetails() {
 
   const { toggleSave, isSaved } = useSavedMess();
   const saved = isSaved(mess?._id ?? "");
+  const { isLoaded, isSignedIn } = useUser();
+
+
+
+  useEffect(() => {
+  if (isLoaded && !isSignedIn) {
+    // 🚫 Not logged in → never allow details page
+    router.replace("/(tabs)/profile");
+  }
+}, [isLoaded, isSignedIn]);
 
   /* ---------------- FETCH MESS ---------------- */
-  useEffect(() => {
-    if (!id) return;
+useEffect(() => {
 
-    const fetchMess = async () => {
-      try {
-        setLoading(true);
-        setError("");
 
-        const res = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`
-        );
+  // 🔒 Guard: invalid or missing id
+  if (!id || typeof id !== "string") {
+    // console.warn("🚫 Invalid mess id, redirecting home");
+    setLoading(false);
+    setMess(null);
+    // setError("Redirecting to home…");
+    router.replace("/(tabs)/(home)");
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch mess");
-        }
+    return;
+  }
 
-        const data = (await res.json()) as Mess;
-        setMess(data);
-      } catch (err) {
-        console.log("Fetch mess error:", err);
-        setError("Unable to load mess details 😕");
-        setMess(null);
-      } finally {
+  let isMounted = true;
+  const controller = new AbortController();
+
+  const fetchMess = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`,
+        { signal: controller.signal }
+      );
+
+      if (!res.ok) {
+        // 🚨 API FAILURE → redirect
+        throw new Error(`API_FAILED_${res.status}`);
+      }
+
+      const data = (await res.json()) as Mess;
+
+      if (!isMounted) return;
+
+      setMess(data);
+    } catch (err: any) {
+  if (err.name === "AbortError") {
+    // 🔕 Silent – normal during login / fast nav
+    return;
+  }
+
+  if (!isMounted) return;
+
+  // 🧠 Detect real API failure
+  const isApiFailure =
+    err instanceof Error &&
+    err.message.startsWith("API_FAILED");
+
+  if (!isApiFailure) {
+    // 🔕 Silent auto-heal (OAuth / stale restore case)
+    router.replace("/(tabs)/(home)");
+    return;
+  }
+
+  // 🔴 REAL failure (deleted mess / backend issue)
+  // console.error("❌ Fetch mess error:", err);
+
+  // setError("Redirecting to home…");
+  // setMess(null);
+
+  setTimeout(() => {
+    router.replace("/(tabs)/(home)");
+  }, 1000);
+}
+ finally {
+      if (isMounted) {
         setLoading(false);
       }
-    };
+    }
+  };
 
-    fetchMess();
-  }, [id]);
+  fetchMess();
+
+  // 🧹 Cleanup
+  return () => {
+    isMounted = false;
+    controller.abort();
+  };
+}, [id]);
+
+
 
   /* ---------------- LOADING ---------------- */
   if (loading) {

@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import * as Location from "expo-location";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth, useUser } from "@clerk/clerk-expo";
+import { usePageRefresh } from "@/components/hooks/usePageRefresh";
 
 /* ---------------- TYPES ---------------- */
 
@@ -31,6 +32,7 @@ export default function AddMess() {
   const [checking, setChecking] = useState(true);
   const [alreadyOwner, setAlreadyOwner] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [ locationloading, setlocationLoading] = useState(false)
   const [uploading, setUploading] = useState(false);
   const [coords, setCoords] = useState<{
   lat: number | null;
@@ -167,7 +169,11 @@ const pickImage = async () => {
   /* ---------------- LOCATION ---------------- */
 
 const detectLocation = async () => {
+  if (locationloading) return; // 🛑 double tap guard
+
   try {
+    setlocationLoading(true);
+
     // 1️⃣ Permission
     const { status } =
       await Location.requestForegroundPermissionsAsync();
@@ -194,16 +200,10 @@ const detectLocation = async () => {
 
     // 3️⃣ HIGH ACCURACY LOCATION
     const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.BestForNavigation, // 🔥 MOST ACCURATE
-      timeInterval: 1000,
-      distanceInterval: 1,
+      accuracy: Location.Accuracy.BestForNavigation,
     });
 
     const { latitude, longitude, accuracy } = loc.coords;
-
-    // console.log("📍 Latitude:", latitude);
-    // console.log("📍 Longitude:", longitude);
-    // console.log("🎯 Accuracy (meters):", accuracy);
 
     // 4️⃣ Save exact coords
     setCoords({
@@ -211,7 +211,7 @@ const detectLocation = async () => {
       lng: longitude,
     });
 
-    // 5️⃣ Reverse geocode ONLY for display
+    // 5️⃣ Reverse geocode (display only)
     const geo = await Location.reverseGeocodeAsync({
       latitude,
       longitude,
@@ -223,20 +223,20 @@ const detectLocation = async () => {
       geo[0]?.district ||
       geo[0]?.region;
 
-      if (accuracy && accuracy > 50) {
-  Alert.alert(
-    "Low accuracy",
-    "Move to an open area for better GPS accuracy"
-  );
-}
+    if (accuracy && accuracy > 50) {
+      Alert.alert(
+        "Low accuracy",
+        "Move to an open area for better GPS accuracy"
+      );
+    }
 
     if (place) {
       setForm((p) => ({ ...p, address: place }));
-
     }
   } catch (err) {
-    // console.error("❌ Location error:", err);
     Alert.alert("Unable to fetch accurate location");
+  } finally {
+    setlocationLoading(false); // ✅ VERY IMPORTANT
   }
 };
 
@@ -324,6 +324,7 @@ const detectLocation = async () => {
       </View>
     );
   }
+
 
   /* ---------------- FORM ---------------- */
 
@@ -419,13 +420,27 @@ const detectLocation = async () => {
       />
 
       <Pressable
-        onPress={detectLocation}
-        style={styles.locationBtn}
-      >
-        <Text style={styles.locationText}>
-          📍 Auto-detect location
-        </Text>
-      </Pressable>
+  onPress={detectLocation}
+  disabled={locationloading}
+  style={[
+    styles.locationBtn,
+    locationloading && { opacity: 0.6 },
+  ]}
+>
+  {locationloading ? (
+    <>
+      <ActivityIndicator size="small" color="#f58207" />
+      <Text style={[styles.locationText, { marginLeft: 8 }]}>
+        Detecting location…
+      </Text>
+    </>
+  ) : (
+    <Text style={styles.locationText}>
+      📍 Auto-detect location
+    </Text>
+  )}
+</Pressable>
+
 
       <Pressable
         onPress={submit}
@@ -530,14 +545,28 @@ const styles = StyleSheet.create({
   },
   pillText: { fontSize: 12, fontWeight: "600" },
   pillTextActive: { color: "#fff" },
+
   locationBtn: {
-    alignSelf: "flex-start",
-    marginBottom: 20,
-  },
-  locationText: {
-    color: "#F97316",
-    fontWeight: "600",
-  },
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderRadius: 14,
+  backgroundColor: "#FFEDD5",
+  marginBottom:6,
+},
+
+locationBtnDisabled: {
+  opacity: 0.6,
+},
+
+locationText: {
+  fontSize: 14,
+  fontWeight: "600",
+  color: "#9A3412",
+},
+
   submitBtn: {
     backgroundColor: "#0F172A",
     paddingVertical: 16,

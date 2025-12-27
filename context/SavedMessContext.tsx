@@ -9,6 +9,7 @@ interface SavedContextType {
   toggleSave: (mess: SavedMess) => void;
   isSaved: (id: string) => boolean;
   loading: boolean;
+  refreshSaved: () => Promise<void>;
 }
 
 const SavedContext = createContext<SavedContextType | null>(null);
@@ -17,6 +18,16 @@ export function SavedMessProvider({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth(); // ✅ Clerk auth state
   const [saved, setSaved] = useState<SavedMess[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const refreshSaved = async () => {
+  try {
+    setLoading(true);
+    const data = await AsyncStorage.getItem("savedMess");
+    setSaved(data ? JSON.parse(data) : []);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Load saved messes
   useEffect(() => {
@@ -62,7 +73,7 @@ export function SavedMessProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SavedContext.Provider
-      value={{ saved, loading, toggleSave, isSaved }}
+      value={{ saved, loading, toggleSave, isSaved, refreshSaved }}
     >
       {children}
     </SavedContext.Provider>

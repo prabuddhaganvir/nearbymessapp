@@ -1,88 +1,94 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
 
-interface Coordinates {
+/* ---------------- TYPES ---------------- */
+
+export interface Coordinates {
   lat: number | null;
   lng: number | null;
   accuracy: number | null;
 }
 
-const MAX_WAIT_TIME = 12000; // 12s hard timeout
-const TARGET_ACCURACY = 20; // meters
+type LocationState = {
+  coords: Coordinates;
+  locationText: string;
+  permissionDenied: boolean;
+  loading: boolean;
+};
+
+/* ---------------- CONSTANTS ---------------- */
+
+const INITIAL_COORDS: Coordinates = {
+  lat: null,
+  lng: null,
+  accuracy: null,
+};
+
+/* ---------------- HOOK ---------------- */
 
 export default function useUserLocation() {
-  const [coords, setCoords] = useState<Coordinates>({
-    lat: null,
-    lng: null,
-    accuracy: null,
+  const [state, setState] = useState<LocationState>({
+    coords: INITIAL_COORDS,
+    locationText: "",
+    permissionDenied: false,
+    loading: false,
   });
 
-  const [locationText, setLocationText] = useState("");
-  const [permissionDenied, setPermissionDenied] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const fetchingRef = useRef(false);
 
-  const isFetchingRef = useRef(false);
+  /* ---------------- HELPERS ---------------- */
 
-  /* 📍 GPS BASED LOCATION */
-  const detectLocation = async () => {
-    if (isFetchingRef.current) return;
+  const updateState = useCallback(
+    (patch: Partial<LocationState>) => {
+      setState(prev => ({ ...prev, ...patch }));
+    },
+    []
+  );
 
-    isFetchingRef.current = true;
-    setLoading(true);
-    setPermissionDenied(false);
-    setLocationText("Getting precise location...");
+  /* ---------------- GPS LOCATION ---------------- */
+
+  const detectLocation = useCallback(async () => {
+    if (fetchingRef.current) return;
+
+    fetchingRef.current = true;
+    updateState({
+      loading: true,
+      permissionDenied: false,
+      locationText: "Getting precise location...",
+    });
 
     try {
-      const { status } =
+      const permission =
         await Location.requestForegroundPermissionsAsync();
 
-      if (status !== "granted") {
-        setPermissionDenied(true);
-        setLocationText("Location permission denied");
+      if (permission.status !== "granted") {
+        updateState({
+          permissionDenied: true,
+          locationText: "Location permission denied",
+        });
         return;
       }
 
-      const startTime = Date.now();
-      let bestLocation: Location.LocationObject | null = null;
-
-      while (Date.now() - startTime < MAX_WAIT_TIME) {
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.BestForNavigation,
+      const location =
+        await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
         });
 
-        if (
-          location.coords.accuracy !== null &&
-          (bestLocation === null ||
-            location.coords.accuracy <
-              (bestLocation.coords.accuracy ?? Infinity))
-        ) {
-          bestLocation = location;
-        }
+      const { latitude, longitude, accuracy } = location.coords;
 
-        if (
-          location.coords.accuracy !== null &&
-          location.coords.accuracy <= TARGET_ACCURACY
-        ) {
-          break;
-        }
-      }
-
-      if (!bestLocation) {
-        throw new Error("Unable to get precise location");
-      }
-
-      const { latitude, longitude, accuracy } = bestLocation.coords;
-
-      setCoords({
+      const coords: Coordinates = {
         lat: latitude,
         lng: longitude,
         accuracy: accuracy ?? null,
-      });
+      };
 
-      const address = await Location.reverseGeocodeAsync({
-        latitude,
-        longitude,
-      });
+      updateState({ coords });
+
+      const address =
+        await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
 
       if (address.length > 0) {
         const place = [
@@ -92,54 +98,80 @@ export default function useUserLocation() {
           .filter(Boolean)
           .join(", ");
 
-        setLocationText(place || "Location detected");
+        updateState({
+          locationText: place || "Location detected",
+        });
       } else {
-        setLocationText("Location detected");
+        updateState({ locationText: "Location detected" });
       }
-    } catch {
-      setLocationText("Unable to detect precise location. Retry.");
-    } finally {
-      setLoading(false);
-      isFetchingRef.current = false;
-    }
-  };
-
-  /* 🔍 TEXT → COORDINATES (Mumbai, Pune, etc.) */
-  const searchLocationByText = async (query: string) => {
-    if (!query.trim()) return;
-
-    try {
-      setLoading(true);
-      setPermissionDenied(false);
-
-      const results = await Location.geocodeAsync(query);
-
-      if (results.length === 0) {
-        setLocationText("Location not found");
-        return;
-      }
-
-      const { latitude, longitude } = results[0];
-
-      setCoords({
-        lat: latitude,
-        lng: longitude,
-        accuracy: null,
+    } catch (error) {
+      console.error("Location error:", error);
+      updateState({
+        locationText: "Unable to detect location",
       });
-    } catch {
-      setLocationText("Unable to find location");
     } finally {
-      setLoading(false);
+      updateState({ loading: false });
+      fetchingRef.current = false;
     }
-  };
+  }, [updateState]);
+
+  /* ---------------- TEXT SEARCH ---------------- */
+
+  const searchLocationByText = useCallback(
+    async (query: string) => {
+      if (!query.trim()) return;
+
+      updateState({ loading: true, permissionDenied: false });
+
+      try {
+        const results = await Location.geocodeAsync(query);
+
+        if (!results.length) {
+          updateState({
+            locationText: "Location not found",
+          });
+          return;
+        }
+
+        updateState({
+          coords: {
+            lat: results[0].latitude,
+            lng: results[0].longitude,
+            accuracy: null,
+          },
+          locationText: query,
+        });
+      } catch (error) {
+        console.error("Geocode error:", error);
+        updateState({
+          locationText: "Unable to find location",
+        });
+      } finally {
+        updateState({ loading: false });
+      }
+    },
+    [updateState]
+  );
+
+  /* ---------------- AUTO DETECT ON MOUNT ---------------- */
+
+  useEffect(() => {
+    detectLocation();
+  }, [detectLocation]);
+
+  /* ---------------- RETURN ---------------- */
 
   return {
-    coords,
-    locationText,
-    setLocationText,
-    permissionDenied,
-    loading,
-    detectLocation,        // 📍 GPS button
-    searchLocationByText,  // 🔍 Manual search
+    coords: state.coords,
+    locationText: state.locationText,
+    setLocationText: (text: string) =>
+      updateState({ locationText: text }),
+    permissionDenied: state.permissionDenied,
+    loading: state.loading,
+    detectLocation,
+    searchLocationByText,
+    isReady:
+      state.coords.lat !== null &&
+      state.coords.lng !== null,
   };
 }

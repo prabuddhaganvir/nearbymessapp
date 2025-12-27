@@ -5,12 +5,15 @@ import {
   View,
   ActivityIndicator,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 import MessCard from "@/components/mess/MessCard";
-import { useSavedMess } from "@/context/SavedMessContext";
+import { SavedMessProvider, useSavedMess } from "@/context/SavedMessContext";
+import { usePageRefresh } from "@/components/hooks/usePageRefresh";
 
 export default function Saved() {
   const { saved, loading } = useSavedMess();
+  const { refreshSaved } = useSavedMess();
 
   /* 🔄 Loading state */
   if (loading) {
@@ -36,8 +39,13 @@ export default function Saved() {
     );
   }
 
+  const { refreshing, onRefresh } = usePageRefresh(async () => {
+   await refreshSaved();
+});
+
   /* ✅ Main UI */
   return (
+  
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -50,9 +58,12 @@ export default function Saved() {
       </View>
 
       {/* List */}
+
       <FlatList
         data={saved}
         keyExtractor={(item) => item._id}
+           refreshing={refreshing}
+          onRefresh={onRefresh}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -62,7 +73,9 @@ export default function Saved() {
           </View>
         )}
       />
+      
     </View>
+    
   );
 }
 

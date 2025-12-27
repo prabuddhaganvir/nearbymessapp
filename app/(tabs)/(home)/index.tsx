@@ -25,6 +25,7 @@ import useUserLocation from "@/components/hooks/usePreciseLocation";
 import MessCard from "@/components/mess/MessCard";
 import MessListSkeleton from "@/components/skeletons/MessListSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { usePageRefresh } from "@/components/hooks/usePageRefresh";
 
 const Index = () => {
   const {
@@ -36,10 +37,13 @@ const Index = () => {
     searchLocationByText,
   } = useUserLocation();
   const [showPopup, setShowPopup] = useState(false);
+  const shouldFetch = !!coords.lat && !!coords.lng;
 
   const { data: messList, loading: messLoading } =
-    useNearbyMess(coords.lat, coords.lng);
-
+   useNearbyMess(
+    shouldFetch ? coords.lat : null,
+    shouldFetch ? coords.lng : null
+  );
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
 
@@ -83,11 +87,12 @@ const Index = () => {
 
 
 const messages = [
-  "Locating you… 📍",
-  "Fetching mess near you… 🍽️",
-  "Almost there… ⏳",
-  "Getting precise location (this may take a moment)… 🧭",
+  "Locating your area…",
+  "Loading nearby services…",
+  "Preparing results…",
+  "Almost done…",
 ];
+
 
 const [step, setStep] = useState(0);
 
@@ -152,7 +157,9 @@ type LatestMessResponse = {
   }, []);
 
 
-
+const { refreshing, onRefresh } = usePageRefresh(async () => {
+  await detectLocation();
+});
 
   return (
     <View style={styles.container}>
@@ -310,6 +317,8 @@ type LatestMessResponse = {
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => <MessCard mess={item} />}
               showsVerticalScrollIndicator={false}
+              refreshing={refreshing}
+  onRefresh={onRefresh}
             />
           )}
       </View>
