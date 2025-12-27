@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,9 +11,10 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useSavedMess } from "@/context/SavedMessContext";
 import { useUser } from "@clerk/clerk-expo";
+
+/* ---------------- TYPES ---------------- */
 
 interface Mess {
   _id: string;
@@ -31,123 +32,82 @@ interface Mess {
 }
 
 export default function MessDetails() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+
+  const { isLoaded, isSignedIn } = useUser();
+  const { toggleSave, isSaved } = useSavedMess();
 
   const [mess, setMess] = useState<Mess | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const rating = mess?.rating ?? { average: 0, count: 0 };
+  const isMounted = useRef(true);
 
-  // 🔐 replace later with real auth
-  const isLoggedIn = true;
+  /* ---------------- AUTH GUARD ---------------- */
+  // useEffect(() => {
+  //   if (!isLoaded) return;
 
-  const { toggleSave, isSaved } = useSavedMess();
-  const saved = isSaved(mess?._id ?? "");
-  const { isLoaded, isSignedIn } = useUser();
-
-
-
-  useEffect(() => {
-  if (isLoaded && !isSignedIn) {
-    // 🚫 Not logged in → never allow details page
-    router.replace("/(tabs)/profile");
-  }
-}, [isLoaded, isSignedIn]);
+  //   if (!isSignedIn) {
+  //     router.replace("/(tabs)/profile");
+  //   }
+  // }, [isLoaded, isSignedIn]);
 
   /* ---------------- FETCH MESS ---------------- */
-useEffect(() => {
-
-
-  // 🔒 Guard: invalid or missing id
-  if (!id || typeof id !== "string") {
-    // console.warn("🚫 Invalid mess id, redirecting home");
-    setLoading(false);
-    setMess(null);
-    // setError("Redirecting to home…");
-    router.replace("/(tabs)/(home)");
-
-    return;
-  }
-
-  let isMounted = true;
-  const controller = new AbortController();
-
-  const fetchMess = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`,
-        { signal: controller.signal }
-      );
-
-      if (!res.ok) {
-        // 🚨 API FAILURE → redirect
-        throw new Error(`API_FAILED_${res.status}`);
-      }
-
-      const data = (await res.json()) as Mess;
-
-      if (!isMounted) return;
-
-      setMess(data);
-    } catch (err: any) {
-  if (err.name === "AbortError") {
-    // 🔕 Silent – normal during login / fast nav
-    return;
-  }
-
-  if (!isMounted) return;
-
-  // 🧠 Detect real API failure
-  const isApiFailure =
-    err instanceof Error &&
-    err.message.startsWith("API_FAILED");
-
-  if (!isApiFailure) {
-    // 🔕 Silent auto-heal (OAuth / stale restore case)
-    router.replace("/(tabs)/(home)");
-    return;
-  }
-
-  // 🔴 REAL failure (deleted mess / backend issue)
-  // console.error("❌ Fetch mess error:", err);
-
-  // setError("Redirecting to home…");
-  // setMess(null);
-
-  setTimeout(() => {
-    router.replace("/(tabs)/(home)");
-  }, 1000);
-}
- finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+  useEffect(() => {
+    if (!id || typeof id !== "string") {
+      setLoading(false);
+      setError("Invalid mess");
+      return;
     }
-  };
 
-  fetchMess();
+    const controller = new AbortController();
 
-  // 🧹 Cleanup
-  return () => {
-    isMounted = false;
-    controller.abort();
-  };
-}, [id]);
+    const fetchMess = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}/api/mess/${id}`,
+          { signal: controller.signal }
+        );
 
+        if (!res.ok) {
+          throw new Error("NOT_FOUND");
+        }
+
+        const data = (await res.json()) as Mess;
+
+        if (!isMounted.current) return;
+        setMess(data);
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+
+        if (!isMounted.current) return;
+
+        setError("Unable to load mess details");
+        setMess(null);
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMess();
+
+    return () => {
+      isMounted.current = false;
+      controller.abort();
+    };
+  }, [id]);
 
   /* ---------------- LOADING ---------------- */
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#f58207" />
-        <Text style={styles.subtleText}>
-          Loading mess details…
-        </Text>
+        <Text style={styles.subtleText}>Loading mess details…</Text>
       </View>
     );
   }
@@ -160,14 +120,23 @@ useEffect(() => {
         <Text style={styles.errorText}>
           {error || "Something went wrong"}
         </Text>
+
+        <Pressable
+          onPress={() => router.replace("/(tabs)/(home)")}
+          style={styles.backBtn}
+        >
+          <Text style={styles.backText}>Go back</Text>
+        </Pressable>
       </View>
     );
   }
 
   /* ---------------- UI ---------------- */
-  return (
+  const saved = isSaved(mess._id);
+  const rating = mess.rating ?? { average: 0, count: 0 };
 
-    <View>
+  return (
+    <View style={{ flex: 1 }}>
       {/* TOP ACTIONS */}
       <View style={styles.topActions}>
         <Pressable onPress={() => router.back()} style={styles.iconBtn}>
@@ -205,40 +174,26 @@ useEffect(() => {
           <Text style={styles.title}>{mess.name}</Text>
 
           <View style={styles.locationRow}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color="#6b7280"
-            />
-            <Text style={styles.locationText}>
-              {mess.address}
-            </Text>
+            <Ionicons name="location-outline" size={16} color="#6b7280" />
+            <Text style={styles.locationText}>{mess.address}</Text>
           </View>
 
-          {/* ⭐ RATING */}
+          {/* ⭐ Rating */}
           <View style={styles.ratingRow}>
             {[1, 2, 3, 4, 5].map((i) => (
-              <Pressable key={i} style={styles.starBtn}>
-                <Ionicons
-                  name={
-                    i <= Math.round(rating.average)
-                      ? "star"
-                      : "star-outline"
-                  }
-                  size={20}
-                  color={
-                    i <= Math.round(rating.average)
-                      ? "#facc15"
-                      : "#d1d5db"
-                  }
-                />
-              </Pressable>
+              <Ionicons
+                key={i}
+                name={i <= Math.round(rating.average) ? "star" : "star-outline"}
+                size={20}
+                color={
+                  i <= Math.round(rating.average)
+                    ? "#facc15"
+                    : "#d1d5db"
+                }
+              />
             ))}
-
             <Text style={styles.ratingText}>
-              {rating.count > 0
-                ? rating.average.toFixed(1)
-                : "New"}
+              {rating.count ? rating.average.toFixed(1) : "New"}
             </Text>
           </View>
 
@@ -251,39 +206,25 @@ useEffect(() => {
             🍱 Food type: {mess.foodType}
           </Text>
 
-          <Text style={styles.description}>
-            {mess.description}
-          </Text>
+          <Text style={styles.description}>{mess.description}</Text>
 
           {/* CTA */}
           <View style={styles.ctaRow}>
             <Pressable
-              onPress={() =>
-                Linking.openURL(`tel:${mess.mobileNumber}`)
-              }
+              onPress={() => Linking.openURL(`tel:${mess.mobileNumber}`)}
               style={[styles.ctaBtn, styles.callBtn]}
             >
-              <Ionicons
-                name="call-outline"
-                size={18}
-                color="#fff"
-              />
+              <Ionicons name="call-outline" size={18} color="#fff" />
               <Text style={styles.ctaText}>Call</Text>
             </Pressable>
 
             <Pressable
               onPress={() =>
-                Linking.openURL(
-                  `https://wa.me/91${mess.mobileNumber}`
-                )
+                Linking.openURL(`https://wa.me/91${mess.mobileNumber}`)
               }
               style={[styles.ctaBtn, styles.whatsappBtn]}
             >
-              <Ionicons
-                name="logo-whatsapp"
-                size={18}
-                color="#fff"
-              />
+              <Ionicons name="logo-whatsapp" size={18} color="#fff" />
               <Text style={styles.ctaText}>WhatsApp</Text>
             </Pressable>
           </View>
@@ -293,12 +234,12 @@ useEffect(() => {
   );
 }
 
-const styles = StyleSheet.create({
+/* ---------------- STYLES ---------------- */
 
-  /* Common */
+const styles = StyleSheet.create({
   center: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
@@ -315,8 +256,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#4B5563",
   },
-
-  /* Top actions */
+  backBtn: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#111827",
+  },
+  backText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
   topActions: {
     position: "absolute",
     top: 56,
@@ -332,15 +282,11 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
   },
-
-  /* Image */
   image: {
     width: "100%",
     height: 260,
     backgroundColor: "#E5E7EB",
   },
-
-  /* Content */
   content: {
     padding: 16,
   },
@@ -359,15 +305,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
   },
-
-  /* Rating */
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 12,
-  },
-  starBtn: {
-    padding: 4,
+    gap: 4,
   },
   ratingText: {
     marginLeft: 8,
@@ -375,8 +317,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
   },
-
-  /* Price */
   price: {
     marginTop: 12,
     fontSize: 22,
@@ -385,24 +325,19 @@ const styles = StyleSheet.create({
   },
   perMonth: {
     fontSize: 14,
-    fontWeight: "400",
     color: "#6B7280",
   },
-
   foodType: {
     marginTop: 4,
     fontSize: 14,
     color: "#6B7280",
   },
-
   description: {
     marginTop: 16,
     fontSize: 15,
     lineHeight: 22,
     color: "#374151",
   },
-
-  /* CTA */
   ctaRow: {
     flexDirection: "row",
     marginTop: 24,

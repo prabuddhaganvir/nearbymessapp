@@ -5,7 +5,6 @@ import {
   View,
   ActivityIndicator,
   FlatList,
-  Linking,
   Pressable,
   TextInput,
   Animated,
@@ -24,177 +23,113 @@ import useNearbyMess from "@/components/hooks/useNearbyMess";
 import useUserLocation from "@/components/hooks/usePreciseLocation";
 import MessCard from "@/components/mess/MessCard";
 import MessListSkeleton from "@/components/skeletons/MessListSkeleton";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { usePageRefresh } from "@/components/hooks/usePageRefresh";
 
-const Index = () => {
+export default function Index() {
+  /* ---------------- LOCATION ---------------- */
   const {
     coords,
     locationText,
     setLocationText,
-    loading,
+    loading: locating,
     detectLocation,
     searchLocationByText,
   } = useUserLocation();
-  const [showPopup, setShowPopup] = useState(false);
-  const [autoDetectAllowed, setAutoDetectAllowed] = useState(false);
-  const shouldFetch = !!coords.lat && !!coords.lng;
 
-  const { data: messList, loading: messLoading } =
-   useNearbyMess(
+  const locationReady = !!coords.lat && !!coords.lng;
+  const shouldFetch = locationReady;
+
+  /* ---------------- DATA ---------------- */
+  const { data: messList, loading: messLoading } = useNearbyMess(
     shouldFetch ? coords.lat : null,
     shouldFetch ? coords.lng : null
   );
+
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
-
-  const locationReady = !!coords.lat && !!coords.lng;
-  const isLocating = loading;
+  /* ---------------- UI STATES ---------------- */
+  const [autoDetectAllowed, setAutoDetectAllowed] = useState(false);
 
   const showWelcomeBanner =
-    !isLocating &&
+    !locating &&
     !messLoading &&
     !locationReady &&
     !hasFetchedOnce &&
     locationText.trim() === "";
 
+  /* ---------------- BANNER ANIMATION ---------------- */
   const bannerOpacity = useRef(new Animated.Value(0)).current;
-  const bannerTranslate = useRef(new Animated.Value(10)).current;
-
-useEffect(() => {
-  if (showWelcomeBanner) {
-    const t = setTimeout(() => {
-      setAutoDetectAllowed(true);
-    }, 1200); // 👈 banner visible for 1.2s
-
-    return () => clearTimeout(t);
-  }
-}, [showWelcomeBanner]);
-
-
+  const bannerTranslate = useRef(new Animated.Value(12)).current;
 
   useEffect(() => {
-    if (showWelcomeBanner) {
-      Animated.parallel([
-        Animated.timing(bannerOpacity, {
-          toValue: 1,
-          duration: 350,
-          useNativeDriver: true,
-        }),
-        Animated.timing(bannerTranslate, {
-          toValue: 0,
-          duration: 350,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+    if (!showWelcomeBanner) return;
+
+    Animated.parallel([
+      Animated.timing(bannerOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bannerTranslate, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, [showWelcomeBanner]);
 
+  /* ---------------- AUTO DETECT (SAFE) ---------------- */
+  useEffect(() => {
+    if (!showWelcomeBanner) return;
+
+    const t = setTimeout(() => {
+      setAutoDetectAllowed(true);
+    }, 1200); // banner visible first
+
+    return () => clearTimeout(t);
+  }, [showWelcomeBanner]);
+
+  useEffect(() => {
+    if (!autoDetectAllowed) return;
+    detectLocation();
+  }, [autoDetectAllowed, detectLocation]);
+
+  /* ---------------- FETCH FLAG ---------------- */
   useEffect(() => {
     if (!messLoading && locationReady) {
       setHasFetchedOnce(true);
     }
   }, [messLoading, locationReady]);
 
-  const canSearch = locationText.trim().length > 0;
-
-
-const messages = [
-  "Locating your area…",
-  "Loading nearby services…",
-  "Preparing results…",
-  "Almost done…",
-];
-
-
-const [step, setStep] = useState(0);
-
-useEffect(() => {
-  let timeouts: ReturnType<typeof setTimeout>[] = [];
-
-  const runSequence = () => {
-    messages.forEach((_, index) => {
-      const t = setTimeout(() => {
-        setStep(index);
-      }, index * 1500); // step change speed
-      timeouts.push(t);
-    });
-
-    // 🔁 restart after last + 5 sec
-    const restart = setTimeout(() => {
-      setStep(0);
-      runSequence();
-    }, messages.length * 1500 + 5000);
-
-    timeouts.push(restart);
-  };
-
-  runSequence();
-
-  return () => {
-    timeouts.forEach(clearTimeout);
-  };
-}, []);
-
-type LatestMessResponse = {
-  createdAt: string | null;
-  messId?: string;
-  name?: string;
-};
-
+  /* ---------------- LOADING TEXT ---------------- */
+  const messages = [
+    "Locating your area…",
+    "Loading nearby services…",
+    "Preparing results…",
+    "Almost done…",
+  ];
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const checkNewMess = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/mess/latest`
-        );
-        const data = (await res.json()) as LatestMessResponse;
+    if (!locating) return;
 
-        // 👉 show popup if mess added in last 15 minutes
-        const FIFTEEN_MIN = 15 * 60 * 1000;
+    const i = setInterval(() => {
+      setStep((p) => (p + 1) % messages.length);
+    }, 1500);
 
-        if (
-          data?.createdAt &&
-          Date.now() - new Date(data.createdAt).getTime() < FIFTEEN_MIN
-        ) {
-          setShowPopup(true);
-          setTimeout(() => setShowPopup(false), 2000);
-        }
-      } catch (e) {
-        console.log("popup error", e);
-      }
-    };
+    return () => clearInterval(i);
+  }, [locating]);
 
-    checkNewMess();
-  }, []);
+  /* ---------------- PULL TO REFRESH ---------------- */
+  const { refreshing, onRefresh } = usePageRefresh(async () => {
+    await detectLocation();
+  });
 
-
-const { refreshing, onRefresh } = usePageRefresh(async () => {
-  await detectLocation();
-});
+  /* ======================= UI ======================= */
 
   return (
     <View style={styles.container}>
-      {showPopup && (
-      <View style={styles.popup}>
-        <Text style={styles.popupText}>
-          🎉 New mess added near your area!
-        </Text>
-      </View>
-    )}
-      {/* OWNER CTA
-      <Pressable
-        onPress={() => Linking.openURL("https://nearbymess.vercel.app")}
-        style={styles.ownerCta}
-      >
-        <Text style={styles.ownerTitle}>📢 Mess Owners</Text>
-        <Text style={styles.ownerSubtitle}>
-          Register your mess on NearByMess
-        </Text>
-      </Pressable> */}
-
-      {/* SEARCH INPUT */}
+      {/* SEARCH */}
       <View style={styles.searchBox}>
         <Ionicons name="search-outline" size={20} color="#f38d07" />
 
@@ -202,28 +137,39 @@ const { refreshing, onRefresh } = usePageRefresh(async () => {
           style={styles.input}
           value={locationText}
           onChangeText={setLocationText}
-          placeholder="Enter city, Area or Landmark"
+          placeholder="Enter city, area or landmark"
           placeholderTextColor="#9ca3af"
           returnKeyType="search"
-          onSubmitEditing={() => searchLocationByText(locationText)}
+          onSubmitEditing={() =>
+            searchLocationByText(locationText)
+          }
         />
 
-        <Pressable onPress={detectLocation} style={styles.locateBtn}>
+        <Pressable
+          onPress={detectLocation}
+          style={styles.locateBtn}
+        >
           <Ionicons name="locate" size={18} color="#f38d07" />
         </Pressable>
       </View>
 
       {/* SEARCH BUTTON */}
       <Pressable
-        disabled={!canSearch}
+        disabled={!locationText.trim()}
         onPress={() => searchLocationByText(locationText)}
         style={[
           styles.searchBtn,
-          { backgroundColor: canSearch ? "#18120dff" : "#f0850bff" },
+          {
+            backgroundColor: locationText.trim()
+              ? "#18120d"
+              : "#f0850b",
+          },
         ]}
       >
         <Ionicons name="search" size={18} color="#fff" />
-        <Text style={styles.searchBtnText}>Search Mess Nearby</Text>
+        <Text style={styles.searchBtnText}>
+          Search Mess Nearby
+        </Text>
       </Pressable>
 
       {/* CONTENT */}
@@ -241,7 +187,7 @@ const { refreshing, onRefresh } = usePageRefresh(async () => {
           >
             <View style={styles.bannerCard}>
               <LinearGradient
-                colors={["#fff", "#e87816ff"]}
+                colors={["#fff", "#e87816"]}
                 style={styles.bannerGradient}
               >
                 <View style={styles.bannerHeader}>
@@ -257,7 +203,6 @@ const { refreshing, onRefresh } = usePageRefresh(async () => {
 
                 <Text style={styles.bannerDesc}>
                   Discover affordable, home-style food services nearby.
-                  Start your search now.
                 </Text>
 
                 <View style={styles.bannerActions}>
@@ -281,7 +226,7 @@ const { refreshing, onRefresh } = usePageRefresh(async () => {
                         Search by City
                       </Text>
                       <Text style={styles.actionSub}>
-                        Explore options in other areas
+                        Explore other areas
                       </Text>
                     </View>
                     <ChevronRight size={18} color="#64748b" />
@@ -292,23 +237,23 @@ const { refreshing, onRefresh } = usePageRefresh(async () => {
           </Animated.View>
         )}
 
-        {/* LOADING */}
-        {isLocating && (
-        <View style={styles.center}>
-  <ActivityIndicator size="large" color="#f58207" />
-  <Text style={styles.loadingText}>
-    {messages[step]}
-  </Text>
-
-</View>
-
+        {/* LOCATING */}
+        {locating && (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color="#f58207" />
+            <Text style={styles.loadingText}>
+              {messages[step]}
+            </Text>
+          </View>
         )}
 
-        {!isLocating && locationReady && messLoading && (
+        {/* SKELETON */}
+        {!locating && locationReady && messLoading && (
           <MessListSkeleton />
         )}
 
-        {!isLocating &&
+        {/* EMPTY */}
+        {!locating &&
           locationReady &&
           hasFetchedOnce &&
           !messLoading &&
@@ -321,26 +266,28 @@ const { refreshing, onRefresh } = usePageRefresh(async () => {
             </View>
           )}
 
-        {!isLocating &&
+        {/* LIST */}
+        {!locating &&
           locationReady &&
           !messLoading &&
           messList.length > 0 && (
             <FlatList
               data={messList}
               keyExtractor={(item) => item._id}
-              renderItem={({ item }) => <MessCard mess={item} />}
+              renderItem={({ item }) => (
+                <MessCard mess={item} />
+              )}
               showsVerticalScrollIndicator={false}
               refreshing={refreshing}
-  onRefresh={onRefresh}
+              onRefresh={onRefresh}
             />
           )}
       </View>
-      
     </View>
   );
-};
+}
 
-export default Index;
+/* ======================= STYLES ======================= */
 
 const styles = StyleSheet.create({
   container: {
@@ -348,25 +295,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 8,
   },
-  ownerCta: {
-    margin: 12,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: "#FEF3C7",
-    borderColor: "#FACC15",
-    borderWidth: 1,
-  },
-  // ownerTitle: {
-  //   fontSize: 14,
-  //   fontWeight: "600",
-  //   color: "#92400E",
-  // },
-  // ownerSubtitle: {
-  //   fontSize: 12,
-  //   color: "#92400E",
-  //   marginTop: 4,
-  //   textDecorationLine: "underline",
-  // },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -375,15 +303,14 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     backgroundColor: "#F9FAFB",
     paddingHorizontal: 12,
-    paddingVertical: 3,
+    paddingVertical: 4,
     marginHorizontal: 8,
-    marginTop:14,
+    marginTop: 14,
   },
   input: {
     flex: 1,
     marginLeft: 8,
     color: "#111827",
-    
   },
   locateBtn: {
     padding: 8,
@@ -438,7 +365,6 @@ const styles = StyleSheet.create({
   bannerTitle: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#000",
   },
   highlight: {
     color: "#FB923C",
@@ -466,7 +392,6 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#000",
   },
   actionSub: {
     fontSize: 12,
@@ -489,23 +414,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#374151",
-  },
-   popup: {
-    position: "absolute",
-    bottom: 30,
-    left: 20,
-    right: 20,
-    backgroundColor: "#111827",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    elevation: 10,
-    zIndex: 9999,
-  },
-  popupText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
   },
 });
